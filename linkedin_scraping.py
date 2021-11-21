@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import requests
 import re
+import sys
 
 
 def setupDriver():
@@ -51,6 +52,8 @@ def scrape(page_source):
 
 
 if __name__ == "__main__":
+    keyWord = sys.argv[1]
+    location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, "software engineer new grad", "St. Paul, Minnesota")
+    page_source = search(driver, keyWord, location)
     scrape(page_source)

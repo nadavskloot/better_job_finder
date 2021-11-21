@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "starting scraping..."
+
+keyWord="software engineer new grad"
+location="St. Paul, Minnesota"
+
+python3 linkedin_scraping.py "${keyWord}" "${location}"
+python3 indeed_scraping.py "${keyWord}" "${location}"
+python3 glassdoor_scraping.py "${keyWord}" "${location}"

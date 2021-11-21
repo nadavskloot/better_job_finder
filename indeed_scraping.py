@@ -5,6 +5,7 @@ from selenium.webdriver.chrome.options import Options
 
 from bs4 import BeautifulSoup
 import re
+import sys
 
 
 def setupDriver():
@@ -40,7 +41,7 @@ def scrape(page_source):
     jobEmployers = soup.find_all("h4", attrs={'class': re.compile("base-search-card__subtitle")})
     jobLocations = soup.find_all("span", attrs={'class': re.compile("job-search-card__location")})
     
-    print(jobTitles)
+    # print(jobTitles)
 
     jobs = {}
     for i in range(len(jobTitles)):
@@ -58,6 +59,8 @@ def scrape(page_source):
 
 
 if __name__ == "__main__":
+    keyWord = sys.argv[1]
+    location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, "software engineer new grad", "St. Paul, Minnesota")
+    page_source = search(driver, keyWord, location)
     scrape(page_source)

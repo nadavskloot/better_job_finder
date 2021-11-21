@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
 import re
+import sys
 
 
 def setupDriver():
@@ -27,31 +28,37 @@ def search(driver, kewWord, location):
     jobLocation.clear()
     jobLocation.send_keys(location)
     jobInput.send_keys(Keys.RETURN) # search
+
+    time.sleep(10)
     return driver.page_source
 
 def scrape(page_source):
     soup = BeautifulSoup(page_source, 'html.parser')
 
+    # jobPosts = soup.find_all("a", attrs={'class': re.compile("job-tile")})
     jobTitles = soup.find_all("p", attrs={'class': re.compile("css-forujw")})
-    jobEmployers = soup.find_all("p", attrs={'class': re.compile("bcss-56kyx5")})
+    jobEmployers = soup.find_all("p", attrs={'class': re.compile("css-56kyx5")})
     jobLocations = soup.find_all("span", attrs={'class': re.compile("job-search-card__location")})
     
+
+    # print(jobPosts)
     print(jobTitles)
 
-    # jobs = {}
-    # for i in range(len(jobTitles)):
-    #     job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
-    #     jobs[job] = {
-    #         "title": jobTitles[i].text.strip(),
-    #         "employer": jobEmployers[i].text.strip(),
-    #         'location': jobLocations[i].text.strip()
-    #     }
+    jobs = {}
+    for i in range(len(jobTitles)):
+        job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
+        jobs[job] = {
+            "title": jobTitles[i].text.strip(),
+            "employer": jobEmployers[i].text.strip(),
+            'location': jobLocations[i].text.strip()
+        }
         
-    # print(jobs)
+    print(jobs)
 
 
 if __name__ == "__main__":
+    keyWord = sys.argv[1]
+    location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, "software engineer new grad", "St. Paul, Minnesota")
-    time.sleep(10)
+    page_source = search(driver, keyWord, location)
     scrape(page_source)
