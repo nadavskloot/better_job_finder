@@ -47,7 +47,7 @@ def scrape(page_source):
             "employer": jobEmployers[i].text.strip(),
             'location': jobLocations[i].text.strip()
         }
-        
+    print()
     print(jobs)
 
 

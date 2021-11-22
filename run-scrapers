@@ -6,5 +6,9 @@ keyWord="software engineer new grad"
 location="St. Paul, Minnesota"
 
 python3 linkedin_scraping.py "${keyWord}" "${location}"
+echo
+echo
 python3 indeed_scraping.py "${keyWord}" "${location}"
+echo
+echo
 python3 glassdoor_scraping.py "${keyWord}" "${location}"

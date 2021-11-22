@@ -2,6 +2,9 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 
 from bs4 import BeautifulSoup
 import time
@@ -9,10 +12,12 @@ import re
 import sys
 
 
+
 def setupDriver():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True) # So window doesn't close
-    driver = webdriver.Chrome("/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver", chrome_options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    chrome_options.add_argument("--disable-single-click-autofill")
+    driver = webdriver.Chrome("/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver", options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.glassdoor.com/Search/")
     #cookie for username: rroczbikpplzvhotou@mrvpt.com, pass: hebedebe
     # cookie = {'name': "li_at",'value':"AQEDATiE-woDvY3iAAABfRYyfewAAAF9Oj8B7E4AySbBRJeEri4Uig-2B1hlS4dhO7btpUwcnJljINARdtGB6IUdmWiWhDxpSWc0P9rhH5wlCx_2ugoDz0lvQumpl-gOuHVp-7uBGeYDhEkwXVi9ETBn"}
@@ -29,20 +34,29 @@ def search(driver, kewWord, location):
     jobLocation.send_keys(location)
     jobInput.send_keys(Keys.RETURN) # search
 
-    time.sleep(10)
-    return driver.page_source
+    # time.sleep(10)
+    base = driver.find_element_by_tag_name("html")
+    try:
+        element = WebDriverWait(driver, 1).until(
+        EC.staleness_of(base)
+    )
+        return driver.page_source
+    except TimeoutException:
+        print("baddd")
 
 def scrape(page_source):
     soup = BeautifulSoup(page_source, 'html.parser')
 
     # jobPosts = soup.find_all("a", attrs={'class': re.compile("job-tile")})
     jobTitles = soup.find_all("p", attrs={'class': re.compile("css-forujw")})
-    jobEmployers = soup.find_all("p", attrs={'class': re.compile("css-56kyx5")})
-    jobLocations = soup.find_all("span", attrs={'class': re.compile("job-search-card__location")})
+    jobEmployers = soup.find_all("p", attrs={'class': re.compile("css-1xznj1f")})
+    jobLocations = soup.find_all("p", attrs={'class': re.compile("css-56kyx5 small")})
     
 
     # print(jobPosts)
-    print(jobTitles)
+    # print(jobTitles)
+    # print(jobEmployers)
+    # print(jobLocations)
 
     jobs = {}
     for i in range(len(jobTitles)):
@@ -53,6 +67,7 @@ def scrape(page_source):
             'location': jobLocations[i].text.strip()
         }
         
+    print()
     print(jobs)
 
 
