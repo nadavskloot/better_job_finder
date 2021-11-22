@@ -2,16 +2,20 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 from bs4 import BeautifulSoup
 import requests
 import re
+import sys
+import pprint
 
 
 def setupDriver():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True) # So window doesn't close
-    driver = webdriver.Chrome("/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver", chrome_options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver')
+    driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
     #cookie for username: rroczbikpplzvhotou@mrvpt.com, pass: hebedebe
     # cookie = {'name': "li_at",'value':"AQEDATiE-woDvY3iAAABfRYyfewAAAF9Oj8B7E4AySbBRJeEri4Uig-2B1hlS4dhO7btpUwcnJljINARdtGB6IUdmWiWhDxpSWc0P9rhH5wlCx_2ugoDz0lvQumpl-gOuHVp-7uBGeYDhEkwXVi9ETBn"}
@@ -46,11 +50,14 @@ def scrape(page_source):
             "employer": jobEmployers[i].text.strip(),
             'location': jobLocations[i].text.strip()
         }
-        
-    print(jobs)
+    print()
+    pp = pprint.PrettyPrinter()
+    pp.pprint(jobs)
 
 
 if __name__ == "__main__":
+    keyWord = sys.argv[1]
+    location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, "software engineer new grad", "St. Paul, Minnesota")
+    page_source = search(driver, keyWord, location)
     scrape(page_source)
