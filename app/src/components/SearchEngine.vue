@@ -48,6 +48,8 @@
     grid-template-rows: repeat(4, 1fr);
     grid-row-gap: 2%;
     margin-bottom: 3%;
+    margin-left: 10%;
+    margin-right: 10%;
 }
 
 label {
