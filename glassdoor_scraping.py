@@ -5,23 +5,22 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
 
 from bs4 import BeautifulSoup
 import time
 import re
 import sys
-
+import pprint
 
 
 def setupDriver():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True) # So window doesn't close
     chrome_options.add_argument("--disable-single-click-autofill")
-    driver = webdriver.Chrome("/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver", options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver')
+    driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.glassdoor.com/Search/")
-    #cookie for username: rroczbikpplzvhotou@mrvpt.com, pass: hebedebe
-    # cookie = {'name': "li_at",'value':"AQEDATiE-woDvY3iAAABfRYyfewAAAF9Oj8B7E4AySbBRJeEri4Uig-2B1hlS4dhO7btpUwcnJljINARdtGB6IUdmWiWhDxpSWc0P9rhH5wlCx_2ugoDz0lvQumpl-gOuHVp-7uBGeYDhEkwXVi9ETBn"}
-    # driver.add_cookie(cookie)
     return driver
 
 def search(driver, kewWord, location):
@@ -35,14 +34,16 @@ def search(driver, kewWord, location):
     jobInput.send_keys(Keys.RETURN) # search
 
     # time.sleep(10)
-    base = driver.find_element_by_tag_name("html")
+    base = driver.find_element(By.TAG_NAME, "html")
+
     try:
-        element = WebDriverWait(driver, 1).until(
+        element = WebDriverWait(driver, 20).until(
         EC.staleness_of(base)
     )
         return driver.page_source
     except TimeoutException:
         print("baddd")
+        raise TimeoutError
 
 def scrape(page_source):
     soup = BeautifulSoup(page_source, 'html.parser')
@@ -68,7 +69,11 @@ def scrape(page_source):
         }
         
     print()
-    print(jobs)
+    pp = pprint.PrettyPrinter()
+    pp.pprint(jobs)
+
+
+    
 
 
 if __name__ == "__main__":
@@ -77,3 +82,4 @@ if __name__ == "__main__":
     driver = setupDriver()
     page_source = search(driver, keyWord, location)
     scrape(page_source)
+    # driver.quit()
