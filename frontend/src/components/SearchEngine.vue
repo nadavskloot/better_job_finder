@@ -71,13 +71,14 @@ p > input {
 #search_button {
     background-color: #245799;
     color: #f0f0f5;
-    width: 25%;
+    width: 50%;
     height: 70%;
     border-style: none;
+    float: left;
 }
 
 section {
-    grid-column: 2/3;
+    grid-column: 1/2;
     grid-row: 4;
 }
 

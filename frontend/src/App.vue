@@ -1,7 +1,8 @@
 <template>
   <header>
-    <h1 id="app_title">Better Job Finder</h1>
+    <h1 id="page_title">Better Job Finder</h1>
   </header>
+  <!-- <h1 id="page_title">Better Job Finder</h1> -->
   <div id="app">
     <SearchEngine />
     <JobResults />
@@ -28,11 +29,13 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  /* margin-top: 60px; */
+  margin: 0px;
 }
 
-#app_title {
+#page_title {
   font-weight: 500;
   font-size: 50px;
+  margin: 0px;
 }
 </style>
