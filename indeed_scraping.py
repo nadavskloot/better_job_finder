@@ -10,6 +10,7 @@ from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 import re
 import sys
+import requests
 
 
 def setupDriver():
@@ -59,9 +60,30 @@ def scrape(page_source):
     # print(jobsDiv.descendants)
     jobLinks = jobsDiv.find_all("a", href=True, recursive=False)
     print(len(jobLinks))
+
+    jobs = {}
     for job in jobLinks:
-        print(job['href'])
+        # print(job['href'])
+        base_url = "https://www.indeed.com" + job['href']
+        r = requests.get(base_url)
+        soup = BeautifulSoup(r.content, 'html.parser')
+        jobTitle = soup.find("h1", attrs={'class': re.compile("jobsearch-JobInfoHeader-title")})
+        jobEmployerDiv = soup.find("div", attrs={'class': re.compile("jobsearch-InlineCompanyRating")})
+        jobEmployer = jobEmployerDiv.find(["a", "div"])
+        jobLocation = jobEmployerDiv.next_sibling
+        jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("jobsearch-JobComponent-description")})
+        jobSalary = jobDescriptionDiv.find(string=re.compile("Salary"))
+
+        print(jobTitle.string)
+        print(jobEmployer.string)
+        print(jobLocation.string)
+        if jobSalary:
+            if jobSalary.next_sibling:
+                print(jobSalary.next_sibling.string)
+        # print(jobDescriptionDiv.string)
         print()
+        
+
 
     # print(jobTitles)
 
