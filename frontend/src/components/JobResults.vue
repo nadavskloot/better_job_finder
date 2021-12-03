@@ -16,6 +16,7 @@
     border-right: 0px;
     border-style: solid;
     border-color: black;
+    height: 100%;
 }
 
 #results_title {
