@@ -9,6 +9,7 @@ db = SQLAlchemy(app)
 # Database of jobs
 class Jobs(db.model):
     id = db.column(db.Integer, primary_key = True)
+    score = db.column(db.Integer)
     job_title = db.column(db.String(200), nullable = False)
     employer = db.column(db.String(200), nullable = False)
     location = db.column(db.String(200))
