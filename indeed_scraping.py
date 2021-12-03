@@ -72,14 +72,12 @@ def scrape(page_source):
         jobEmployer = jobEmployerDiv.find(["a", "div"])
         jobLocation = jobEmployerDiv.next_sibling
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("jobsearch-JobComponent-description")})
-        jobSalary = jobDescriptionDiv.find(string=re.compile("Salary"))
+        jobStuff = jobDescriptionDiv.find_all("b")
 
         print(jobTitle.string)
         print(jobEmployer.string)
         print(jobLocation.string)
-        if jobSalary:
-            if jobSalary.next_sibling:
-                print(jobSalary.next_sibling.string)
+        print(jobStuff)
         # print(jobDescriptionDiv.string)
         print()
         

@@ -12,6 +12,7 @@ import time
 import re
 import sys
 import pprint
+import requests
 
 
 def setupDriver():
@@ -31,46 +32,78 @@ def search(driver, kewWord, location):
     jobInput.send_keys(kewWord + " Jobs")
     jobLocation.clear()
     jobLocation.send_keys(location)
+    base = driver.find_element(By.TAG_NAME, "html")
     jobInput.send_keys(Keys.RETURN) # search
 
     # time.sleep(10)
-    base = driver.find_element(By.TAG_NAME, "html")
+    
 
     try:
         element = WebDriverWait(driver, 20).until(
         EC.staleness_of(base)
     )
-        return driver.page_source
+    except TimeoutException:
+        print("baddd")
+        raise TimeoutError
+    
+    base = driver.find_element(By.TAG_NAME, "html")
+    seeMoreButton = driver.find_element(By.CSS_SELECTOR, "a[data-test='jobs-location-see-all-link']")
+    seeMoreButton.click()
+
+    try:
+        element = WebDriverWait(driver, 20).until(
+        EC.staleness_of(base)
+    )
+        return driver
     except TimeoutException:
         print("baddd")
         raise TimeoutError
 
-def scrape(page_source):
-    soup = BeautifulSoup(page_source, 'html.parser')
+def scrape(driver):
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     # jobPosts = soup.find_all("a", attrs={'class': re.compile("job-tile")})
     jobTitles = soup.find_all("p", attrs={'class': re.compile("css-forujw")})
     jobEmployers = soup.find_all("p", attrs={'class': re.compile("css-1xznj1f")})
     jobLocations = soup.find_all("p", attrs={'class': re.compile("css-56kyx5 small")})
     
+    
+    jobsUl = soup.find("ul", attrs={'class': re.compile("job-search-key")})
+    # print(jobsUl)
+    # print()
+    jobLinks = jobsUl.find_all("a", href=True, limit=5)
+    # print(jobLinks)
+    # print()
+    for job in jobLinks:
+        base_url = "https://www.glassdoor.com" + job['href']
+        r = requests.get(base_url)
+        soup = BeautifulSoup(r.content, 'html.parser')
+
+        jobTitle = soup.find("div", attrs={'class': re.compile("css-16nw49e")})
+        jobDescriptionDiv = soup.find("div", attrs={"id": re.compile("JobDesc")})
+        # jobStuff = jobDescriptionDiv.find_all("b")
+        print(soup)
+        print(jobTitle)
+        # print(jobStuff)
+        print()
 
     # print(jobPosts)
     # print(jobTitles)
     # print(jobEmployers)
     # print(jobLocations)
 
-    jobs = {}
-    for i in range(len(jobTitles)):
-        job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
-        jobs[job] = {
-            "title": jobTitles[i].text.strip(),
-            "employer": jobEmployers[i].text.strip(),
-            'location': jobLocations[i].text.strip()
-        }
+    # jobs = {}
+    # for i in range(len(jobTitles)):
+    #     job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
+    #     jobs[job] = {
+    #         "title": jobTitles[i].text.strip(),
+    #         "employer": jobEmployers[i].text.strip(),
+    #         'location': jobLocations[i].text.strip()
+    #     }
         
-    print()
-    pp = pprint.PrettyPrinter()
-    pp.pprint(jobs)
+    # print()
+    # pp = pprint.PrettyPrinter()
+    # pp.pprint(jobs)
 
 
     
@@ -80,6 +113,6 @@ if __name__ == "__main__":
     keyWord = sys.argv[1]
     location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, keyWord, location)
-    scrape(page_source)
+    driver = search(driver, keyWord, location)
+    scrape(driver)
     # driver.quit()
