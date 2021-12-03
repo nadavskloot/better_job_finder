@@ -2,7 +2,6 @@
   <header>
     <h1 id="page_title">Better Job Finder</h1>
   </header>
-  <!-- <h1 id="page_title">Better Job Finder</h1> -->
   <div id="app">
     <SearchEngine />
     <JobResults />
