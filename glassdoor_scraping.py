@@ -37,14 +37,14 @@ def search(driver, kewWord, location):
 
     # time.sleep(10)
     
-
-    try:
-        element = WebDriverWait(driver, 20).until(
-        EC.staleness_of(base)
-    )
-    except TimeoutException:
-        print("baddd")
-        raise TimeoutError
+    waitForRefresh(driver, base)
+    # try:
+    #     element = WebDriverWait(driver, 20).until(
+    #     EC.staleness_of(base)
+    # )
+    # except TimeoutException:
+    #     print("baddd")
+    #     raise TimeoutError
     
     base = driver.find_element(By.TAG_NAME, "html")
     seeMoreButton = driver.find_element(By.CSS_SELECTOR, "a[data-test='jobs-location-see-all-link']")
@@ -89,6 +89,7 @@ def scrape(driver):
             raise TimeoutError
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
+
         jobTitle = soup.find("div", attrs={'class': re.compile("css-17x2pwl")})
         jobEmployer = soup.find("div", attrs={'class': re.compile("css-16nw49e")})
         if jobEmployer.span:
@@ -96,10 +97,27 @@ def scrape(driver):
         jobLocation = soup.find("div", attrs={'class': re.compile("css-1v5elnn")})
         jobDescriptionDiv = soup.find("div", attrs={"id": re.compile("JobDesc")})
         # jobStuff = jobDescriptionDiv.find_all("b")
-        # print(soup)
+        try:
+            element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-tab-type='salary']"))
+            )
+        except TimeoutException:
+            print("baddd")
+            raise TimeoutError
+        salaryButton = driver.find_element(By.CSS_SELECTOR, "div[data-tab-type='salary']")
+        base = driver.find_element(By.TAG_NAME, "html")
+        salaryButton.click()
+        
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        salary = soup.find("div", attrs={'class': re.compile("css-1bluz6i")})
+        if salary.span:
+            salary.span.extract()
+        
+        
         print(jobTitle.string)
         print(jobEmployer.string)
         print(jobLocation.string)
+        print(salary.string)
         # print(jobStuff)
         print()
 
@@ -123,7 +141,15 @@ def scrape(driver):
 
 
     
-
+def waitForRefresh(driver, base):
+    try:
+        element = WebDriverWait(driver, 20).until(
+        EC.staleness_of(base)
+    )
+        return
+    except TimeoutException:
+        print("baddd")
+        raise TimeoutError
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]
