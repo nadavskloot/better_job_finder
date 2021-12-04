@@ -71,7 +71,9 @@ def scrape(driver):
     jobsUl = soup.find("ul", attrs={'class': re.compile("job-search-key")})
     # print(jobsUl)
     # print()
-    jobLinks = jobsUl.find_all("a", href=True, limit=5)
+    jobLinks = jobsUl.find_all("a", href=True, limit=20) # there is a better way to do this
+    jobLinks = jobLinks[::4]
+
     # print(jobLinks)
     # print()
     for job in jobLinks:
@@ -96,29 +98,30 @@ def scrape(driver):
             jobEmployer.span.extract()
         jobLocation = soup.find("div", attrs={'class': re.compile("css-1v5elnn")})
         jobDescriptionDiv = soup.find("div", attrs={"id": re.compile("JobDesc")})
-        # jobStuff = jobDescriptionDiv.find_all("b")
-        try:
-            element = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-tab-type='salary']"))
-            )
-        except TimeoutException:
-            print("baddd")
-            raise TimeoutError
-        salaryButton = driver.find_element(By.CSS_SELECTOR, "div[data-tab-type='salary']")
-        base = driver.find_element(By.TAG_NAME, "html")
-        salaryButton.click()
-        
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        salary = soup.find("div", attrs={'class': re.compile("css-1bluz6i")})
-        if salary.span:
-            salary.span.extract()
-        
-        
+
+        # print(base_url)
         print(jobTitle.string)
         print(jobEmployer.string)
         print(jobLocation.string)
-        print(salary.string)
-        # print(jobStuff)
+
+        try:
+            element = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-tab-type='salary']"))
+            )
+            salaryButton = driver.find_element(By.CSS_SELECTOR, "div[data-tab-type='salary']")
+            base = driver.find_element(By.TAG_NAME, "html")
+            salaryButton.click()
+            
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            salary = soup.find("div", attrs={'class': re.compile("css-1bluz6i")})
+            if salary.span:
+                salary.span.extract()
+            print(salary.string)
+        except TimeoutException:
+            print("no salary")
+        
+        # print(jobDescriptionDiv)
+        print(jobDescriptionDiv.text)
         print()
 
     # print(jobPosts)
