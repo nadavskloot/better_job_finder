@@ -27,68 +27,35 @@ def setupDriver():
 def search(driver, kewWord, location):
     jobInput = driver.find_elements(By.ID, "sc.keyword")[0]
     jobLocation = driver.find_elements(By.ID, "sc.location")[0]
-    # str(jobInput.is_displayed())
     jobInput.clear()
     jobInput.send_keys(kewWord + " Jobs")
     jobLocation.clear()
     jobLocation.send_keys(location)
     base = driver.find_element(By.TAG_NAME, "html")
     jobInput.send_keys(Keys.RETURN) # search
-
-    # time.sleep(10)
     
     waitForRefresh(driver, base)
-    # try:
-    #     element = WebDriverWait(driver, 20).until(
-    #     EC.staleness_of(base)
-    # )
-    # except TimeoutException:
-    #     print("baddd")
-    #     raise TimeoutError
     
     base = driver.find_element(By.TAG_NAME, "html")
     seeMoreButton = driver.find_element(By.CSS_SELECTOR, "a[data-test='jobs-location-see-all-link']")
     seeMoreButton.click()
 
-    try:
-        element = WebDriverWait(driver, 20).until(
-        EC.staleness_of(base)
-    )
-        return driver
-    except TimeoutException:
-        print("baddd")
-        raise TimeoutError
+    waitForRefresh(driver, base)
+    return driver
 
 def scrape(driver):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-    # jobPosts = soup.find_all("a", attrs={'class': re.compile("job-tile")})
-    jobTitles = soup.find_all("p", attrs={'class': re.compile("css-forujw")})
-    jobEmployers = soup.find_all("p", attrs={'class': re.compile("css-1xznj1f")})
-    jobLocations = soup.find_all("p", attrs={'class': re.compile("css-56kyx5 small")})
-    
-    
+        
     jobsUl = soup.find("ul", attrs={'class': re.compile("job-search-key")})
-    # print(jobsUl)
-    # print()
     jobLinks = jobsUl.find_all("a", href=True, limit=20) # there is a better way to do this
     jobLinks = jobLinks[::4]
 
-    # print(jobLinks)
-    # print()
     for job in jobLinks:
         base_url = "https://www.glassdoor.com" + job['href']
-        # r = requests.get(base_url)
-        # soup = BeautifulSoup(r.content, 'html.parser')
         base = driver.find_element(By.TAG_NAME, "html")
         driver.get(base_url)
-        try:
-            element = WebDriverWait(driver, 20).until(
-            EC.staleness_of(base)
-        )
-        except TimeoutException:
-            print("baddd")
-            raise TimeoutError
+        
+        waitForRefresh(driver, base)
         soup = BeautifulSoup(driver.page_source, "html.parser")
 
 
@@ -105,7 +72,7 @@ def scrape(driver):
         print(jobLocation.string)
 
         try:
-            element = WebDriverWait(driver, 5).until(
+            element = WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-tab-type='salary']"))
             )
             salaryButton = driver.find_element(By.CSS_SELECTOR, "div[data-tab-type='salary']")
@@ -123,25 +90,6 @@ def scrape(driver):
         # print(jobDescriptionDiv)
         print(jobDescriptionDiv.text)
         print()
-
-    # print(jobPosts)
-    # print(jobTitles)
-    # print(jobEmployers)
-    # print(jobLocations)
-
-    # jobs = {}
-    # for i in range(len(jobTitles)):
-    #     job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
-    #     jobs[job] = {
-    #         "title": jobTitles[i].text.strip(),
-    #         "employer": jobEmployers[i].text.strip(),
-    #         'location': jobLocations[i].text.strip()
-    #     }
-        
-    # print()
-    # pp = pprint.PrettyPrinter()
-    # pp.pprint(jobs)
-
 
     
 def waitForRefresh(driver, base):
