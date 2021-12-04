@@ -76,14 +76,30 @@ def scrape(driver):
     # print()
     for job in jobLinks:
         base_url = "https://www.glassdoor.com" + job['href']
-        r = requests.get(base_url)
-        soup = BeautifulSoup(r.content, 'html.parser')
+        # r = requests.get(base_url)
+        # soup = BeautifulSoup(r.content, 'html.parser')
+        base = driver.find_element(By.TAG_NAME, "html")
+        driver.get(base_url)
+        try:
+            element = WebDriverWait(driver, 20).until(
+            EC.staleness_of(base)
+        )
+        except TimeoutException:
+            print("baddd")
+            raise TimeoutError
+        soup = BeautifulSoup(driver.page_source, "html.parser")
 
-        jobTitle = soup.find("div", attrs={'class': re.compile("css-16nw49e")})
+        jobTitle = soup.find("div", attrs={'class': re.compile("css-17x2pwl")})
+        jobEmployer = soup.find("div", attrs={'class': re.compile("css-16nw49e")})
+        if jobEmployer.span:
+            jobEmployer.span.extract()
+        jobLocation = soup.find("div", attrs={'class': re.compile("css-1v5elnn")})
         jobDescriptionDiv = soup.find("div", attrs={"id": re.compile("JobDesc")})
         # jobStuff = jobDescriptionDiv.find_all("b")
-        print(soup)
-        print(jobTitle)
+        # print(soup)
+        print(jobTitle.string)
+        print(jobEmployer.string)
+        print(jobLocation.string)
         # print(jobStuff)
         print()
 
