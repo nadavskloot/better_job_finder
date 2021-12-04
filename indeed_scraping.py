@@ -37,17 +37,12 @@ def search(driver, kewWord, location):
     jobInput.send_keys(Keys.RETURN) # search
 
     
-    try:
-        element = WebDriverWait(driver, 20).until(
-        EC.staleness_of(base)
-    )
-        return driver.page_source
-    except TimeoutException:
-        print("baddd")
-        raise TimeoutError
+    waitForRefresh(driver, base)
+    return driver
+    
 
-def scrape(page_source):
-    soup = BeautifulSoup(page_source, 'html.parser')
+def scrape(driver):
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobTitles = soup.find_all("h2", attrs={'class': re.compile("jobTitle")})
     jobEmployers = soup.find_all("h4", attrs={'class': re.compile("base-search-card__subtitle")})
@@ -64,21 +59,32 @@ def scrape(page_source):
     jobs = {}
     for job in jobLinks:
         # print(job['href'])
+        # base_url = "https://www.indeed.com" + job['href']
+        # print(base_url)
+        # r = requests.get(base_url)
+        # soup = BeautifulSoup(r.content, 'html.parser')
+
         base_url = "https://www.indeed.com" + job['href']
-        r = requests.get(base_url)
-        soup = BeautifulSoup(r.content, 'html.parser')
+        base = driver.find_element(By.TAG_NAME, "html")
+        driver.get(base_url)
+        
+        waitForRefresh(driver, base)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        # print(soup)
         jobTitle = soup.find("h1", attrs={'class': re.compile("jobsearch-JobInfoHeader-title")})
         jobEmployerDiv = soup.find("div", attrs={'class': re.compile("jobsearch-InlineCompanyRating")})
         jobEmployer = jobEmployerDiv.find(["a", "div"])
         jobLocation = jobEmployerDiv.next_sibling
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("jobsearch-JobComponent-description")})
-        jobStuff = jobDescriptionDiv.find_all("b")
+        detailsSection = jobDescriptionDiv.find("div", id="jobDetailsSection")
+        salary = detailsSection.find(string=re.compile("$"))
+        qualificationsSection = jobDescriptionDiv.find("div", id="qualificationsSection")
 
         print(jobTitle.string)
         print(jobEmployer.string)
         print(jobLocation.string)
-        print(jobStuff)
-        # print(jobDescriptionDiv.string)
+        print(salary)
+        print(jobDescriptionDiv.text)
         print()
         
 
@@ -99,10 +105,19 @@ def scrape(page_source):
         
     # print(jobs)
 
+def waitForRefresh(driver, base):
+    try:
+        element = WebDriverWait(driver, 20).until(
+        EC.staleness_of(base)
+    )
+        return
+    except TimeoutException:
+        print("baddd")
+        raise TimeoutError
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]
     location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, keyWord, location)
-    scrape(page_source)
+    driver = search(driver, keyWord, location)
+    scrape(driver)
