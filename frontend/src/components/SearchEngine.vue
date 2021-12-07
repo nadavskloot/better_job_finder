@@ -3,29 +3,29 @@
         <form id="search_container">
             <div id="left">
                 <label class="box1">Job Title</label>
-                <input class="box1" type="text" placeholder="Job Title">
+                <input class="box1" v-model="search_data.job_title" type="text" placeholder="Job Title">
 
                 <label class="box2">Location</label>
-                <input class="box2" type="text" placeholder="Location">
+                <input class="box2" v-model="search_data.location" type="text" placeholder="Location">
 
                 <label class="box3">Expected Yearly Income</label>
-                <input class="box3" type="text" placeholder="Expected Yearly Income">
+                <input class="box3" v-model="search_data.income" type="text" placeholder="Expected Yearly Income">
 
                 <label class="box4">Key Words</label>
-                <input class="box4" type="text" placeholder="Key Words">
+                <input class="box4" v-model="search_data.key_words" type="text" placeholder="Key Words">
             </div>
             <div id="right">
                 <label class="box5">Required Skills</label>
-                <input class="box5" type="text" placeholder="Required Skills">
+                <input class="box5" v-model="search_data.required_skills" type="text" placeholder="Required Skills">
 
                 <label class="box6">Years of Experience</label>
-                <input class="box6" type="text" placeholder="Years of Experience">
+                <input class="box6" v-model="search_data.experience" type="text" placeholder="Years of Experience">
 
                 <label class="box7">Education Level</label>
-                <input class="box7" type="text" placeholder="Education Level">
+                <input class="box7" v-model="search_data.education" type="text" placeholder="Education Level">
 
                 <label class="box8">Employment Type</label>
-                <input class="box8" type="text" placeholder="Employment Type">
+                <input class="box8" v-model="search_data.job_type" type="text" placeholder="Employment Type">
             </div>
             <input id="search_button" @click="search" type="button" value="Search">
         </form>
@@ -33,10 +33,38 @@
 </template>
 
 <script>
+    import axios from 'axios'
+
     export default {
+        data() {
+            return {
+                search_data: {
+                    job_title: "",
+                    location: "",
+                    income: "",
+                    key_words: "",
+                    required_skills: "",
+                    experience: "",
+                    education: "",
+                    job_type: ""
+                }
+            }
+        },
         methods: {
             search() {
-                
+                const path = 'http://127.0.0.1:5000/search'
+                axios.post(path, {
+                    job_title: this.search_data.job_title,
+                    location: this.search_data.location,
+                    income: this.search_data.income,
+                    key_words: this.search_data.key_words,
+                    required_skills: this.search_data.required_skills,
+                    experience: this.search_data.experience,
+                    education: this.search_data.education,
+                    job_type: this.search_data.job_type
+                })
+                .then(response => {console.log(response)})
+                .catch(err => {console.log(err)})
             }
         }
     }
