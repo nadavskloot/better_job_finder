@@ -13,10 +13,11 @@ import re
 import sys
 import pprint
 import time
+from textblob import TextBlob
 
 def setupDriver():
     chrome_options = Options()
-    chrome_options.add_experimental_option("detach", True) # So window doesn't close
+    # chrome_options.add_experimental_option("detach", True) # So window doesn't close
     s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver')
     driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
@@ -65,36 +66,41 @@ def scrape(driver):
         # jobLocation = jobHeader.find("a", attrs={"class": re.compile("topcard__org-name-link")})
         jobLocation = jobHeader.find("span", attrs={"class": "topcard__flavor"}).findNextSibling()
 
-        jobInfo = soup.find("ul", attrs={"class": re.compile("description__job-criteria-list")})
+        jobDict = {
+            "title": jobTitle.string.strip(),
+            "employer": jobEmployer.text.strip(),
+            "location": jobLocation.text.strip(),
+        }
+
+        jobInfoUl = soup.find("ul", attrs={"class": re.compile("description__job-criteria-list")})
+        if jobInfoUl:
+            jobType = jobInfoUl.find("h3", text=re.compile("Employment type")).findNextSibling()
+            print(jobType.text.strip())
+            jobDict["job_type"] = jobType.text.strip()
+
         
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("show-more-less-htm")})
-
-
         
+        search_description(jobDescriptionDiv.text)
+        yearsExperiance = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
+        educationLevel = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master")])
 
         # print(jobHeader)
         print(jobTitle.string)
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
+        print(yearsExperiance)
+        print(educationLevel)
         # print(jobInfo)
+        # print(jobDescriptionDiv.text)
         print()
 
-    # jobTitles = soup.find_all("h3", attrs={'class': re.compile("base-search-card__title")})
-    # jobEmployers = soup.find_all("h4", attrs={'class': re.compile("base-search-card__subtitle")})
-    # jobLocations = soup.find_all("span", attrs={'class': re.compile("job-search-card__location")})
-    
 
-    # jobs = {}
-    # for i in range(len(jobTitles)):
-    #     job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
-    #     jobs[job] = {
-    #         "title": jobTitles[i].text.strip(),
-    #         "employer": jobEmployers[i].text.strip(),
-    #         'location': jobLocations[i].text.strip()
-    #     }
-    # print()
-    # pp = pprint.PrettyPrinter()
-    # pp.pprint(jobs)
+def search_description(text):
+    blob = TextBlob(text)
+    for sentence in blob.sentences:
+        if sentence == re.compile("year"):
+            print(sentence)
 
 def waitForRefresh(driver, base):
     try:
@@ -112,3 +118,4 @@ if __name__ == "__main__":
     driver = setupDriver()
     driver = search(driver, keyWord, location)
     scrape(driver)
+    driver.quit()
