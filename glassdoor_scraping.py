@@ -12,6 +12,7 @@ import time
 import re
 import sys
 import pprint
+import requests
 
 
 def setupDriver():
@@ -26,60 +27,85 @@ def setupDriver():
 def search(driver, kewWord, location):
     jobInput = driver.find_elements(By.ID, "sc.keyword")[0]
     jobLocation = driver.find_elements(By.ID, "sc.location")[0]
-    # str(jobInput.is_displayed())
     jobInput.clear()
     jobInput.send_keys(kewWord + " Jobs")
     jobLocation.clear()
     jobLocation.send_keys(location)
-    jobInput.send_keys(Keys.RETURN) # search
-
-    # time.sleep(10)
     base = driver.find_element(By.TAG_NAME, "html")
+    jobInput.send_keys(Keys.RETURN) # search
+    
+    waitForRefresh(driver, base)
+    
+    base = driver.find_element(By.TAG_NAME, "html")
+    seeMoreButton = driver.find_element(By.CSS_SELECTOR, "a[data-test='jobs-location-see-all-link']")
+    seeMoreButton.click()
 
+    waitForRefresh(driver, base)
+    return driver
+
+def scrape(driver):
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
+        
+    jobsUl = soup.find("ul", attrs={'class': re.compile("job-search-key")})
+    jobLinks = jobsUl.find_all("a", href=True, limit=20) # there is a better way to do this
+    jobLinks = jobLinks[::4]
+
+    for job in jobLinks:
+        base_url = "https://www.glassdoor.com" + job['href']
+        base = driver.find_element(By.TAG_NAME, "html")
+        driver.get(base_url)
+        
+        waitForRefresh(driver, base)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+
+
+        jobTitle = soup.find("div", attrs={'class': re.compile("css-17x2pwl")})
+        jobEmployer = soup.find("div", attrs={'class': re.compile("css-16nw49e")})
+        if jobEmployer.span:
+            jobEmployer.span.extract()
+        jobLocation = soup.find("div", attrs={'class': re.compile("css-1v5elnn")})
+        jobDescriptionDiv = soup.find("div", attrs={"id": re.compile("JobDesc")})
+
+        # print(base_url)
+        print(jobTitle.string)
+        print(jobEmployer.string)
+        print(jobLocation.string)
+
+        try:
+            element = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-tab-type='salary']"))
+            )
+            salaryButton = driver.find_element(By.CSS_SELECTOR, "div[data-tab-type='salary']")
+            base = driver.find_element(By.TAG_NAME, "html")
+            salaryButton.click()
+            
+            soup = BeautifulSoup(driver.page_source, "html.parser")
+            salary = soup.find("div", attrs={'class': re.compile("css-1bluz6i")})
+            if salary.span:
+                salary.span.extract()
+            print(salary.string)
+        except TimeoutException:
+            print("no salary")
+        
+        # print(jobDescriptionDiv)
+        print(jobDescriptionDiv.text)
+        print()
+
+    
+def waitForRefresh(driver, base):
     try:
         element = WebDriverWait(driver, 20).until(
         EC.staleness_of(base)
     )
-        return driver.page_source
+        return
     except TimeoutException:
         print("baddd")
         raise TimeoutError
-
-def scrape(page_source):
-    soup = BeautifulSoup(page_source, 'html.parser')
-
-    # jobPosts = soup.find_all("a", attrs={'class': re.compile("job-tile")})
-    jobTitles = soup.find_all("p", attrs={'class': re.compile("css-forujw")})
-    jobEmployers = soup.find_all("p", attrs={'class': re.compile("css-1xznj1f")})
-    jobLocations = soup.find_all("p", attrs={'class': re.compile("css-56kyx5 small")})
-    
-
-    # print(jobPosts)
-    # print(jobTitles)
-    # print(jobEmployers)
-    # print(jobLocations)
-
-    jobs = {}
-    for i in range(len(jobTitles)):
-        job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
-        jobs[job] = {
-            "title": jobTitles[i].text.strip(),
-            "employer": jobEmployers[i].text.strip(),
-            'location': jobLocations[i].text.strip()
-        }
-        
-    print()
-    pp = pprint.PrettyPrinter()
-    pp.pprint(jobs)
-
-
-    
-
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]
     location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, keyWord, location)
-    scrape(page_source)
+    driver = search(driver, keyWord, location)
+    scrape(driver)
     # driver.quit()

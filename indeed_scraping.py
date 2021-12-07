@@ -26,7 +26,6 @@ def setupDriver():
 def search(driver, kewWord, location):
     jobInput = driver.find_elements(By.ID, "text-input-what")[0]
     jobLocation = driver.find_elements(By.ID, "text-input-where")[0]
-    # str(jobInput.is_displayed())
     jobInput.clear()
     jobInput.send_keys(kewWord)
     jobLocation.send_keys(Keys.TAB)
@@ -37,74 +36,87 @@ def search(driver, kewWord, location):
     jobInput.send_keys(Keys.RETURN) # search
 
     
-    try:
-        element = WebDriverWait(driver, 20).until(
-        EC.staleness_of(base)
-    )
-        return driver.page_source
-    except TimeoutException:
-        print("baddd")
-        raise TimeoutError
-
-def scrape(page_source):
-    soup = BeautifulSoup(page_source, 'html.parser')
-
-    jobTitles = soup.find_all("h2", attrs={'class': re.compile("jobTitle")})
-    jobEmployers = soup.find_all("h4", attrs={'class': re.compile("base-search-card__subtitle")})
-    jobLocations = soup.find_all("span", attrs={'class': re.compile("job-search-card__location")})
+    waitForRefresh(driver, base)
+    return driver
     
 
-    # print(jobTitles)
+def scrape(driver):
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobsDiv = soup.find_all("div", id=re.compile("mosaic-provider-jobcards"))[0]
-    # print(jobsDiv.descendants)
     jobLinks = jobsDiv.find_all("a", href=True, recursive=False)
     print(len(jobLinks))
 
     jobs = {}
     for job in jobLinks:
-        # print(job['href'])
         base_url = "https://www.indeed.com" + job['href']
-        r = requests.get(base_url)
-        soup = BeautifulSoup(r.content, 'html.parser')
+        base = driver.find_element(By.TAG_NAME, "html")
+        driver.get(base_url)
+        
+        waitForRefresh(driver, base)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
         jobTitle = soup.find("h1", attrs={'class': re.compile("jobsearch-JobInfoHeader-title")})
         jobEmployerDiv = soup.find("div", attrs={'class': re.compile("jobsearch-InlineCompanyRating")})
         jobEmployer = jobEmployerDiv.find(["a", "div"])
         jobLocation = jobEmployerDiv.next_sibling
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("jobsearch-JobComponent-description")})
-        jobSalary = jobDescriptionDiv.find(string=re.compile("Salary"))
+
+        detailsSection = soup.find("div", id="jobDetailsSection")
+        if detailsSection:
+            salary = detailsSection.find("span", string=re.compile("$"))
+            jobType = detailsSection.find("div", string="Job Type").next_sibling
+        qualificationsSection = soup.find("div", id="qualificationsSection")
+        
+
+        descriptionSection = soup.find("div", id="jobDescriptionText")
+
+
+        jobDict = {
+            "title": jobTitle,
+            "employer": jobEmployer,
+            "location": jobLocation,
+        }
 
         print(jobTitle.string)
         print(jobEmployer.string)
         print(jobLocation.string)
-        if jobSalary:
-            if jobSalary.next_sibling:
-                print(jobSalary.next_sibling.string)
-        # print(jobDescriptionDiv.string)
+        if detailsSection and salary:
+            print(salary.string)
+            jobDict["salary"] = salary.string
+        if jobType and detailsSection:
+            print(jobType.string)
+            jobDict["job_type"] = jobType.string
+        # print(jobDescriptionDiv.text)
+        # print(descriptionSection.text)
+        if qualificationsSection:
+            print(qualificationsSection.text)
         print()
         
-
-
-    # print(jobTitles)
-
-    # jobs = {}
-    # for i in range(len(jobTitles)):
-    #     for job in jobTitles[i].children:
-    #         if job.string != "new":
-    #             print(job.string)
-    #     job = jobEmployers[i].text.strip() + " - " + jobTitles[i].text.strip()
-    #     jobs[job] = {
-    #         "title": jobTitles[i].text.strip(),
-    #         "employer": jobEmployers[i].text.strip(),
-    #         'location': jobLocations[i].text.strip()
-    #     }
         
-    # print(jobs)
 
+
+    return jobDict
+
+
+
+def score(jobsDict, searchDict):
+    return
+
+def waitForRefresh(driver, base):
+    try:
+        element = WebDriverWait(driver, 20).until(
+        EC.staleness_of(base)
+    )
+        return
+    except TimeoutException:
+        print("baddd")
+        raise TimeoutError
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]
     location = sys.argv[2]
     driver = setupDriver()
-    page_source = search(driver, keyWord, location)
-    scrape(page_source)
+    driver = search(driver, keyWord, location)
+    jobDict = scrape(driver)
+    searchDict = {}
+    # score(jobsDict, searchDict)

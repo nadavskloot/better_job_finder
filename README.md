@@ -1,4 +1,7 @@
 # better_job_finder
  
-improvements: Make scraping find from structure rather than tags.
-Add waits for page loading
+Test for other Searches!!!
+
+improvements: Make scraping find from structure rather than tags. (glassdoor especially)
+
+Bugs: glassdoor sometimes autofill wrong search
