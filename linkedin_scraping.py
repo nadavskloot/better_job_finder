@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 import sys
+import random
 import pprint
 import time
 from textblob import TextBlob
@@ -55,7 +56,8 @@ def scrape(driver):
         # waitForRefresh(driver, base)
         
         # soup = BeautifulSoup(driver.page_source, "html.parser")
-        time.sleep(2)
+        sleepTime = random.randint(2,5)
+        time.sleep(sleepTime)
         base_url = job['href']
         r = requests.get(base_url)
         soup = BeautifulSoup(r.content, 'html.parser')
@@ -83,13 +85,15 @@ def scrape(driver):
         
         search_description(jobDescriptionDiv.text)
         yearsExperiance = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
-        educationLevel = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master")])
+        educationLevelSentence = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master"), re.compile("BS"), re.compile("MS")])
+        # educationLevel = re.findall(r'\d+', educationLevelSentence.text.strip())
 
         # print(jobHeader)
         print(jobTitle.string)
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
         print(yearsExperiance)
+        print(educationLevelSentence)
         print(educationLevel)
         # print(jobInfo)
         # print(jobDescriptionDiv.text)
@@ -111,6 +115,13 @@ def waitForRefresh(driver, base):
     except TimeoutException:
         print("baddd")
         raise TimeoutError
+
+def main(keyWord, location,):
+    print("hello")
+    driver = setupDriver()
+    driver = search(driver, keyWord, location)
+    scrape(driver)
+    driver.quit()
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]
