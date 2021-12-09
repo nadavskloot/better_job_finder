@@ -22,15 +22,11 @@ def setupDriver():
     s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver')
     driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
-    #cookie for username: rroczbikpplzvhotou@mrvpt.com, pass: hebedebe
-    # cookie = {'name': "li_at",'value':"AQEDATiE-woDvY3iAAABfRYyfewAAAF9Oj8B7E4AySbBRJeEri4Uig-2B1hlS4dhO7btpUwcnJljINARdtGB6IUdmWiWhDxpSWc0P9rhH5wlCx_2ugoDz0lvQumpl-gOuHVp-7uBGeYDhEkwXVi9ETBn"}
-    # driver.add_cookie(cookie)
     return driver
 
 def search(driver, kewWord, location):
     jobInput = driver.find_elements(By.NAME, "keywords")[0]
     jobLocation = driver.find_elements(By.NAME, "location")[0]
-    # str(jobInput.is_displayed())
     jobInput.clear()
     jobInput.send_keys(kewWord)
     jobLocation.clear()
@@ -51,23 +47,17 @@ def scrape(driver, userSearch):
     jobResults = []
     for job in jobLinks:
         print(job['href'])
-        # base_url = job['href']
-        # base = driver.find_element(By.TAG_NAME, "html")
-        # driver.get(base_url)
-        
-        # waitForRefresh(driver, base)
-        
-        # soup = BeautifulSoup(driver.page_source, "html.parser")
+
         sleepTime = random.randint(4,10)
         time.sleep(sleepTime)
+
         base_url = job['href']
         r = requests.get(base_url)
         soup = BeautifulSoup(r.content, 'html.parser')
-        # print(soup)
+
         jobHeader = soup.find("section", attrs={"class": re.compile("top-card-layout")})
         jobTitle = jobHeader.find("h1", attrs={"class": re.compile("topcard__title")})
         jobEmployer = jobHeader.find("a", attrs={"class": re.compile("topcard__org-name-link")})
-        # jobLocation = jobHeader.find("a", attrs={"class": re.compile("topcard__org-name-link")})
         jobLocation = jobHeader.find("span", attrs={"class": "topcard__flavor"}).findNextSibling()
 
         jobDict = {
@@ -93,16 +83,14 @@ def scrape(driver, userSearch):
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("show-more-less-htm")})
         
         
-        
-
-        # print(jobHeader)
         print(jobTitle.string)
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
         
-        search_description(jobDescriptionDiv, jobDict)
-        # print(jobInfo)
-        # print(jobDescriptionDiv.text)
+        search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
+        requiredSkills = userSearch["required_skills"].strip()
+        search_skills(jobDescriptionDiv, jobDict, requiredSkills)
+
         pp = pprint.PrettyPrinter()
         pp.pprint(jobDict)
         print()
@@ -113,8 +101,9 @@ def search_description(jobDescriptionDiv, jobDict):
     yearsExperienceSentence = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
     if yearsExperienceSentence:
         yearsExperience = [int(s) for s in re.findall(r'\b\d+\b', str(yearsExperienceSentence))]
-        jobDict["experience"] = yearsExperience[0]
-        print(yearsExperience)
+        if len(yearsExperience) > 0:
+            jobDict["experience"] = yearsExperience[0]
+            print(yearsExperience)
         print(yearsExperienceSentence)
     educationLevelSentence = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master"), re.compile("BS "), re.compile(" MS ")])
     jobDict["education"] = str(educationLevelSentence).strip()
@@ -124,6 +113,14 @@ def search_description(jobDescriptionDiv, jobDict):
     for sentence in blob.sentences:
         if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
             print(sentence)
+
+def search_skills(jobDescriptionDiv, jobDict, requiredSkills):
+    blob = TextBlob(jobDescriptionDiv.text)
+    for sentence in blob.sentences:
+        if requiredSkills in sentence.words:
+            print(sentence)
+    if requiredSkills in blob.words:
+        jobDict["required_skills"] = True
 
 def waitForRefresh(driver, base):
     try:
@@ -148,5 +145,5 @@ if __name__ == "__main__":
     location = sys.argv[2]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
-    scrape(driver, {})
+    scrape(driver, {'job_title': '', 'location': '', 'income': '', 'key_words': '', 'required_skills': 'python', 'experience': '', 'education': '', 'job_type': ''})
     driver.quit()

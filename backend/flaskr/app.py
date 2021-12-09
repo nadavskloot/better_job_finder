@@ -38,7 +38,8 @@ def search():
     
     
     if request.method == 'POST':
-        linkedin_scraping.main(dict(request.get_json())) 
+        userSearch = dict(request.get_json())
+        linkedin_scraping.main(userSearch) 
         return jsonify(response_object)
 
 if __name__ == '__main__':
