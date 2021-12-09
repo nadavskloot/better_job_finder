@@ -40,13 +40,15 @@ def search(driver, kewWord, location):
     waitForRefresh(driver, base)
     return driver
 
-def scrape(driver, userInput):
+def scrape(driver, userSearch):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobsUl = soup.find("ul", attrs={"class": re.compile("jobs-search__results-list")})
     jobLinks = jobsUl.find_all("a", href=True, attrs={"class": re.compile("base-card__full-link")})
     print(len(jobLinks))
     
+
+    jobResults = []
     for job in jobLinks:
         print(job['href'])
         # base_url = job['href']
@@ -72,6 +74,13 @@ def scrape(driver, userInput):
             "title": jobTitle.string.strip(),
             "employer": jobEmployer.text.strip(),
             "location": jobLocation.text.strip(),
+            'income': None,
+            'key_words': None, 
+            'required_skills': None, 
+            'experience': None, 
+            'education': None, 
+            'job_type': None,
+            'score': 0
         }
 
         jobInfoUl = soup.find("ul", attrs={"class": re.compile("description__job-criteria-list")})
@@ -83,28 +92,37 @@ def scrape(driver, userInput):
         
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("show-more-less-htm")})
         
-        search_description(jobDescriptionDiv.text)
-        yearsExperienceSentence = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
-        educationLevelSentence = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master"), re.compile("BS"), re.compile("MS")])
-        if yearsExperienceSentence:
-            yearsExperience = [int(s) for s in re.findall(r'\b\d+\b', str(yearsExperienceSentence))]
-            print(yearsExperience)
+        
+        
 
         # print(jobHeader)
         print(jobTitle.string)
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
-        print(yearsExperienceSentence)
-        print(educationLevelSentence)
+        
+        search_description(jobDescriptionDiv, jobDict)
         # print(jobInfo)
         # print(jobDescriptionDiv.text)
+        pp = pprint.PrettyPrinter()
+        pp.pprint(jobDict)
         print()
 
 
-def search_description(text):
-    blob = TextBlob(text)
+def search_description(jobDescriptionDiv, jobDict):
+            
+    yearsExperienceSentence = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
+    if yearsExperienceSentence:
+        yearsExperience = [int(s) for s in re.findall(r'\b\d+\b', str(yearsExperienceSentence))]
+        jobDict["experience"] = yearsExperience[0]
+        print(yearsExperience)
+        print(yearsExperienceSentence)
+    educationLevelSentence = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master"), re.compile("BS "), re.compile(" MS ")])
+    jobDict["education"] = str(educationLevelSentence).strip()
+    print(educationLevelSentence)
+
+    blob = TextBlob(jobDescriptionDiv.text)
     for sentence in blob.sentences:
-        if sentence == re.compile("year"):
+        if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
             print(sentence)
 
 def waitForRefresh(driver, base):
@@ -117,11 +135,12 @@ def waitForRefresh(driver, base):
         print("baddd")
         raise TimeoutError
 
-def main(keyWord, location,):
-    print("hello")
+def main(userSearch):
+    keyWord = userSearch["job_title"]
+    location = userSearch["location"]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
-    scrape(driver)
+    jobResults = scrape(driver, userSearch)
     driver.quit()
 
 if __name__ == "__main__":
@@ -129,6 +148,5 @@ if __name__ == "__main__":
     location = sys.argv[2]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
-    userInput = {}
-    scrape(driver)
+    scrape(driver, {})
     driver.quit()

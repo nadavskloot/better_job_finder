@@ -1,6 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+import sys
+sys.path.append('../')
+from scrapers import linkedin_scraping
 
 app = Flask(__name__)
 CORS(app)
@@ -31,8 +34,11 @@ class Jobs(db.Model):
 @app.route("/search", methods=['POST', 'GET'])
 def search():
     response_object = {'status': 'success'}
-
+    print(request.get_json())
+    
+    
     if request.method == 'POST':
+        linkedin_scraping.main(dict(request.get_json())) 
         return jsonify(response_object)
 
 if __name__ == '__main__':
