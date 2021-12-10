@@ -87,13 +87,41 @@ def scrape(driver, userSearch):
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
         
-        search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
-        requiredSkills = userSearch["required_skills"].strip()
-        search_skills(jobDescriptionDiv, jobDict, requiredSkills)
+        # search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
+        findEducation(jobDescriptionDiv, jobDict)
+        # requiredSkills = userSearch["required_skills"]
+        search_skills(jobDescriptionDiv, jobDict, userSearch)
 
         pp = pprint.PrettyPrinter()
         pp.pprint(jobDict)
         print()
+        # print(str(jobDescriptionDiv.text))
+
+def findEducation(jobDescriptionDiv, jobDict):
+    blob = TextBlob(str(jobDescriptionDiv.text))
+    educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bCollege Diploma "],
+                       "MS": [r"\b[Mm]asters", r"\bMS ", r"\bM.S. "],
+                       "PhD": [ r"\bPhD", r"\b[Dd]octorate "]}
+    for sentence in blob.sentences:
+        for educationLevel in educationRegex.keys():
+            for regex in educationRegex[educationLevel]:
+                match = re.search(regex, str(sentence))
+                if match:
+#                     print(str(sentence))
+                    print(match.group())
+                    print(educationLevel)
+                    jobDict["education"] = educationLevel
+
+# def scoreEducation(jobDict, userSearch): 
+#     userEducation = userSearch["education"].strip()
+#     if userEducation:
+#         educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS", r"\bB.S.", r"\bCollege Diploma"],
+#                        "MS": [r"\b[Mm]asters", r"\bMS", r"\bM.S."],
+#                        "PhD": [ r"\bPhD", r"\b[Dd]octorate"]}
+#         for educationLevel in educationRegex.keys():
+#             for regex in educationRegex[educationLevel]:
+#                 match = re.search(regex, userEducation)
+#                 if match:
 
 
 def search_description(jobDescriptionDiv, jobDict):
@@ -114,13 +142,20 @@ def search_description(jobDescriptionDiv, jobDict):
         if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
             print(sentence)
 
-def search_skills(jobDescriptionDiv, jobDict, requiredSkills):
-    blob = TextBlob(jobDescriptionDiv.text)
-    for sentence in blob.sentences:
-        if requiredSkills in sentence.words:
-            print(sentence)
-    if requiredSkills in blob.words:
-        jobDict["required_skills"] = True
+def search_skills(jobDescriptionDiv, jobDict, userSearch):
+    # blob = TextBlob(jobDescriptionDiv.text)
+    # for sentence in blob.sentences:
+    #     if requiredSkills in sentence.words:
+    #         print(sentence)
+    # if requiredSkills in blob.words:
+    #     jobDict["required_skills"] = True
+    skills = userSearch["required_skills"]
+    string = str(jobDescriptionDiv.text)
+    for skill in skills:
+        match = re.search(re.escape(skill), string.lower())
+        if match:
+            print(match.group())
+            jobDict["required_skills"] = match.group()
 
 def waitForRefresh(driver, base):
     try:
@@ -145,5 +180,5 @@ if __name__ == "__main__":
     location = sys.argv[2]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
-    scrape(driver, {'job_title': '', 'location': '', 'income': '', 'key_words': '', 'required_skills': 'python', 'experience': '', 'education': '', 'job_type': ''})
+    scrape(driver, {'job_title': '', 'location': '', 'income': '', 'key_words': '', 'required_skills': ['python'], 'experience': '', 'education': '', 'job_type': ''})
     driver.quit()
