@@ -15,6 +15,7 @@ import random
 import pprint
 import time
 from textblob import TextBlob
+from word2number import w2n
 
 def setupDriver():
     chrome_options = Options()
@@ -68,7 +69,7 @@ def scrape(driver, userSearch):
             'key_words': None, 
             'required_skills': None, 
             'experience': None, 
-            'education': None, 
+            'education': [], 
             'job_type': None,
             'score': 0
         }
@@ -89,6 +90,7 @@ def scrape(driver, userSearch):
         
         # search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
         findEducation(jobDescriptionDiv, jobDict)
+        findExperience(jobDescriptionDiv, jobDict)
         # requiredSkills = userSearch["required_skills"]
         search_skills(jobDescriptionDiv, jobDict, userSearch)
 
@@ -99,7 +101,7 @@ def scrape(driver, userSearch):
 
 def findEducation(jobDescriptionDiv, jobDict):
     blob = TextBlob(str(jobDescriptionDiv.text))
-    educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bCollege Diploma "],
+    educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"\bCollege Diploma "],
                        "MS": [r"\b[Mm]asters", r"\bMS ", r"\bM.S. "],
                        "PhD": [ r"\bPhD", r"\b[Dd]octorate "]}
     for sentence in blob.sentences:
@@ -107,10 +109,46 @@ def findEducation(jobDescriptionDiv, jobDict):
             for regex in educationRegex[educationLevel]:
                 match = re.search(regex, str(sentence))
                 if match:
-#                     print(str(sentence))
+                    # print(str(sentence))
                     print(match.group())
                     print(educationLevel)
-                    jobDict["education"] = educationLevel
+                    if educationLevel not in jobDict["education"]:
+                        jobDict["education"].append(educationLevel)
+
+def findExperience(jobDescriptionDiv, jobDict):
+    yearsExperienceTag = jobDescriptionDiv.find(text=[re.compile(r"\b\d+\b(.)*((year)|(years))(.)*experience")])
+    children = jobDescriptionDiv.findChildren()
+    # for tag in jobDescriptionDiv:
+    #     print(tag)
+    #     print()
+    experienceRegex = [r"\b\d+\b(.)*((year)|(years))(.)*experience", 
+                    r"(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )(.)*[(year)|(years)](.)*experience"]
+    for child in children:
+        for child2 in child:
+            # print(child2.text)
+            blob = TextBlob(str(child2.text))
+            for sentence in blob.sentences:
+                for regex in experienceRegex:
+                    match = re.search(regex, str(sentence))
+                    if match:
+                        print(match)
+                        sentenceToExperience(match.group(), jobDict)
+                        print()
+
+def sentenceToExperience(sentence, jobDict):
+    matches = re.findall("(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
+    if matches:
+        for match in matches:
+            num = w2n.word_to_num(match)
+
+            sentence = sentence.replace(match, str(num))
+    matches = re.findall(r"\d+", sentence)
+    if matches:
+    # print(matches)
+        # print(int(min(matches)))
+        jobDict["experience"] = int(min(matches))
+
+    
 
 # def scoreEducation(jobDict, userSearch): 
 #     userEducation = userSearch["education"].strip()
@@ -142,7 +180,7 @@ def search_description(jobDescriptionDiv, jobDict):
         if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
             print(sentence)
 
-def search_skills(jobDescriptionDiv, jobDict, userSearch):
+def search_skills(jobDescriptionDiv, jobDict, userSearch): # required Skills need to be a list and lowercase!!!!
     # blob = TextBlob(jobDescriptionDiv.text)
     # for sentence in blob.sentences:
     #     if requiredSkills in sentence.words:
