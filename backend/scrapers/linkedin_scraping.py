@@ -20,6 +20,7 @@ from word2number import w2n
 def setupDriver():
     chrome_options = Options()
     # chrome_options.add_experimental_option("detach", True) # So window doesn't close
+    chrome_options.add_argument("--headless") # So window never opens
     s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver')
     driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
@@ -45,7 +46,7 @@ def scrape(driver, userSearch):
     print(len(jobLinks))
     
 
-    jobResults = []
+    linkedinJobs = []
     for job in jobLinks:
         print(job['href'])
 
@@ -71,7 +72,8 @@ def scrape(driver, userSearch):
             'experience': None, 
             'education': [], 
             'job_type': None,
-            'score': 0
+            'score': 0,
+            "link": base_url
         }
 
         jobInfoUl = soup.find("ul", attrs={"class": re.compile("description__job-criteria-list")})
@@ -97,13 +99,16 @@ def scrape(driver, userSearch):
         pp = pprint.PrettyPrinter()
         pp.pprint(jobDict)
         print()
+        linkedinJobs.append(jobDict)
         # print(str(jobDescriptionDiv.text))
+    return linkedinJobs
 
 def findEducation(jobDescriptionDiv, jobDict):
     blob = TextBlob(str(jobDescriptionDiv.text))
-    educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"\bCollege Diploma "],
-                       "MS": [r"\b[Mm]asters", r"\bMS ", r"\bM.S. "],
-                       "PhD": [ r"\bPhD", r"\b[Dd]octorate "]}
+    # print(blob)
+    educationRegex = {"BS": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
+                       "MS": [r"[Mm]aster", r"\bMS ", r"\bM.S. "],
+                       "PhD": [ r"PhD", r"\b[Dd]octorate "]}
     for sentence in blob.sentences:
         for educationLevel in educationRegex.keys():
             for regex in educationRegex[educationLevel]:
@@ -210,8 +215,9 @@ def main(userSearch):
     location = userSearch["location"]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
-    jobResults = scrape(driver, userSearch)
+    linkedinJobs = scrape(driver, userSearch)
     driver.quit()
+    return linkedinJobs
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]

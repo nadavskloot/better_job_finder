@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+import pprint
 import sys
 sys.path.append('../')
 from scrapers import linkedin_scraping
@@ -39,7 +40,9 @@ def search():
     
     if request.method == 'POST':
         userSearch = dict(request.get_json())
-        linkedin_scraping.main(userSearch) 
+        linkedinJobs = linkedin_scraping.main(userSearch)
+        pp = pprint.PrettyPrinter()
+        pp.pprint(linkedinJobs)
         return jsonify(response_object)
 
 if __name__ == '__main__':
