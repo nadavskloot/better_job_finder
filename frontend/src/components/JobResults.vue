@@ -4,7 +4,7 @@
         <input @click="getSearchResults" type="button" value="Search">
         <ul>
             <li v-for="job in jobs_data" :key="job.id">
-                {{job.job_title}} {{job.employer}} {{job.location}} {{job.salary}} {{job.job_post_link}}
+                {{job.job_title}} {{job.employer}} {{job.job_post_link}}
             </li>
         </ul>
     </div>

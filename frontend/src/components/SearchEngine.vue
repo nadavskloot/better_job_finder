@@ -3,31 +3,49 @@
         <form id="search_container">
             <div id="left">
                 <label>Desired Job Title</label>
-                <input v-model="search_data.job_title" type="text" placeholder="Desired Job Title">
+                <input v-model="search_data.job_title" type="text" placeholder="'Software Engineer, Financial Manager, etc.'">
 
+                <label>Your Years of Experience</label>
+                <input class="range_input" v-model="search_data.experience" type="range" min="0" max="50">
+
+                <label>Your Education Level</label>
+                <select v-model="search_data.education">
+                    <option>High School</option>
+                    <option>Bachelors</option>
+                    <option>Masters</option>
+                    <option>P.H.D.</option>
+                </select>
+
+                <label>Your Skills</label>
+                <input v-model="search_data.required_skills" type="text" placeholder="Ex.: 'Java, Microsoft Office, etc.'">
+            </div>
+            <div id="right">
                 <label>Location</label>
                 <input v-model="search_data.location" type="text" placeholder="Location">
 
                 <label>Expected Yearly Income</label>
-                <input v-model="search_data.income" type="text" placeholder="Expected Yearly Income">
+                <input class="range_input" v-model="search_data.income" type="range" min="0" max="500,000">
 
                 <label>Employment Type</label>
-                <input v-model="search_data.job_type" type="text" placeholder="Employment Type">
-            </div>
-            <div id="right">
-                <label>Your Skills</label>
-                <input v-model="search_data.required_skills" type="text" placeholder="Your Skills">
-
-                <label>Your Years of Experience</label>
-                <input v-model="search_data.experience" type="text" placeholder="Your Years of Experience">
-
-                <label>Your Education Level</label>
-                <input v-model="search_data.education" type="text" placeholder="Your Education Level">
+                <select v-model="search_data.job_type">
+                    <option>Full-time</option>
+                    <option>Part-time</option>
+                    <option>Internship</option>
+                    <option>Contract</option>
+                </select>
 
                 <label>Find your dream job!</label>
-                <input id="search_button" @click="search" type="button" value="Search">
+                <input id="search_button" @click="getSearchResults" type="button" value="Search">
             </div>
         </form>
+    </div>
+    <div id="job_results_section">
+        <h2 id="results_title">Results</h2>
+        <ul>
+            <li v-for="job in jobs_data" :key="job.id">
+                {{job.job_title}} {{job.employer}} {{job.job_post_link}}
+            </li>
+        </ul>
     </div>
 </template>
 
@@ -43,14 +61,15 @@
                     income: "",
                     key_words: "",
                     required_skills: "",
-                    experience: "",
+                    experience: null,
                     education: "",
                     job_type: ""
-                }
+                },
+                jobs_data: []
             }
         },
         methods: {
-            search() {
+            getSearchResults() {
                 const path = 'http://127.0.0.1:5000/getSearchResults'
                 axios.post(path, {
                     job_title: this.search_data.job_title,
@@ -64,6 +83,9 @@
                 })
                 .then(response => {console.log(response)})
                 .catch(err => {console.log(err)})
+
+                axios.get(path).then(response => (this.jobs_data = response.data)).catch(err => {console.log(err)})
+                console.log(this.jobs_data)
             }
         }
     }
@@ -79,7 +101,7 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: 1fr, 1fr;
-    grid-column-gap: 10%;
+    grid-column-gap: 9%;
     margin-left: 13%;
     margin-right: 13%;
     height: 100%;
@@ -107,7 +129,7 @@ label {
     font-style: italic;
 }
 
-input {
+input, select {
     float: left;
     width: calc(100% - 10px);
     height: 11%;
@@ -115,6 +137,19 @@ input {
     border: #ededed;
     border-width: 3px;
     border-style: solid;
+}
+
+select {
+    height: 12.5%;
+    width: 100%;
+}
+
+.range_input {
+    height: 11%;
+    width: 100%;
+    padding-top: 1px;
+    padding-bottom: 1px;
+    margin: 0px;
 }
 
 #search_button {
@@ -128,5 +163,20 @@ input {
     align-self: end;
     justify-self: center;
     font-size: 15px;
+}
+
+#job_results_section {
+    border-top: 1px;
+    border-bottom: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    border-style: solid;
+    border-color: black;
+    height: 100%;
+}
+
+#results_title {
+    font-weight: 500;
+    font-size: 30px;
 }
 </style>

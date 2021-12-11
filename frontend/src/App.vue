@@ -15,8 +15,7 @@ import JobResults from './components/JobResults.vue'
 export default {
   name: 'App',
   components: {
-    SearchEngine,
-    JobResults
+    SearchEngine
   }
 }
 </script>
