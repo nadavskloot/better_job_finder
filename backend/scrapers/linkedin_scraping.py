@@ -24,8 +24,8 @@ from word2number import w2n
 
 def setupDriver():
     chrome_options = Options()
-    chrome_options.add_experimental_option("detach", True) # So window doesn't close
-    # chrome_options.add_argument("--headless") # So window never opens
+    # chrome_options.add_experimental_option("detach", True) # So window doesn't close
+    chrome_options.add_argument("--headless") # So window never opens
     plat = platform.system()
     print(plat)
     # s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/Mac/chromedriver')
@@ -127,17 +127,17 @@ def scrape(driver, userSearch):
 def findEducation(jobDescriptionDiv, jobDict):
     blob = TextBlob(str(jobDescriptionDiv.text))
     # print(blob)
-    educationRegex = {"BS": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
-                       "MS": [r"\b[Mm]aster", r"\bMS ", r"\bM.S. "],
-                       "PhD": [ r"PhD", r"\b[Dd]octorate "]}
+    educationRegex = {"Bachelors": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
+                       "Masters": [r"\b[Mm]aster", r"\bMS ", r"\bM.S. "],
+                       "P.H.D": [ r"PhD", r"P.H.D.", r"\b[Dd]octorate "]}
     for sentence in blob.sentences:
         for educationLevel in educationRegex.keys():
             for regex in educationRegex[educationLevel]:
                 match = re.search(regex, str(sentence))
                 if match:
                     # print(str(sentence))
-                    print(match.group())
-                    print(educationLevel)
+                    # print(match.group())
+                    # print(educationLevel)
                     if educationLevel not in jobDict["education"]:
                         jobDict["education"].append(educationLevel)
 
@@ -157,12 +157,12 @@ def findExperience(jobDescriptionDiv, jobDict):
                 for regex in experienceRegex:
                     match = re.search(regex, str(sentence))
                     if match:
-                        print(match)
+                        # print(match)
                         sentenceToExperience(match.group(), jobDict)
-                        print()
-                    match2 = re.search(r"years", str(sentence))
-                    if match2:
-                        print("match2: ", sentence)
+                        # print()
+                    # match2 = re.search(r"years", str(sentence))
+                    # if match2:
+                    #     print("match2: ", sentence)
 
 def sentenceToExperience(sentence, jobDict):
     matches = re.findall("(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
@@ -219,10 +219,12 @@ def search_skills(jobDescriptionDiv, jobDict, userSearch): # required Skills nee
     #         print(sentence)
     # if requiredSkills in blob.words:
     #     jobDict["required_skills"] = True
-    skills = userSearch["required_skills"]
+    skills = userSearch["required_skills"].split(",")
+    print(skills)
     string = str(jobDescriptionDiv.text)
     for skill in skills:
-        match = re.search(re.escape(skill), string.lower())
+        match = re.search(re.escape(skill.strip().lower()), string.lower())
+        # match = re.search(skill, string.lower())
         if match:
             print(match.group())
             jobDict["required_skills"].append(str(match.group()).strip())
@@ -238,8 +240,9 @@ def score(jobDict, userSearch):
         if jobDict["experience"] <= int(userSearch["experience"]):
             jobDict["score"] += 1
             print("experience!")
-    if len(jobDict["required_skills"]) < 0:
-        jobDict["score"] += (len(jobDict["required_skills"]) / len(userSearch["required_skills"]))
+    if len(jobDict["required_skills"]) > 0:
+        jobDict["score"] += (len(jobDict["required_skills"]) / len(userSearch["required_skills"].split(",")))
+        print("skills!")
     if jobDict["income"] and userSearch["income"]:
         if jobDict["income"] >= int(userSearch["income"]):
             jobDict["score"] += 1
