@@ -20,6 +20,8 @@ import os
 from textblob import TextBlob
 from word2number import w2n
 
+
+
 def setupDriver():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True) # So window doesn't close
@@ -54,6 +56,9 @@ def scrape(driver, userSearch):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobsUl = soup.find("ul", attrs={"class": re.compile("jobs-search__results-list")})
+    if not jobsUl:
+        print("NO UL")
+        print(soup)
     jobLinks = jobsUl.find_all("a", href=True, attrs={"class": re.compile("base-card__full-link")})
     print(len(jobLinks))
     
@@ -70,6 +75,9 @@ def scrape(driver, userSearch):
         soup = BeautifulSoup(r.content, 'html.parser')
 
         jobHeader = soup.find("section", attrs={"class": re.compile("top-card-layout")})
+        if not jobHeader:
+            driver.get(base_url)
+            print(soup)
         jobTitle = jobHeader.find("h1", attrs={"class": re.compile("topcard__title")})
         jobEmployer = jobHeader.find("a", attrs={"class": re.compile("topcard__org-name-link")})
         jobLocation = jobHeader.find("span", attrs={"class": "topcard__flavor"}).findNextSibling()
@@ -152,6 +160,9 @@ def findExperience(jobDescriptionDiv, jobDict):
                         print(match)
                         sentenceToExperience(match.group(), jobDict)
                         print()
+                    match2 = re.search(r"years", str(sentence))
+                    if match2:
+                        print("match2: ", sentence)
 
 def sentenceToExperience(sentence, jobDict):
     matches = re.findall("(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
@@ -164,7 +175,10 @@ def sentenceToExperience(sentence, jobDict):
     if matches:
     # print(matches)
         # print(int(min(matches)))
-        jobDict["experience"] = int(min(matches))
+        if jobDict["experience"]:
+            jobDict["experience"] = max(jobDict["experience"], int(min(matches)))
+        else:
+            jobDict["experience"] = int(min(matches))
 
     
 
@@ -216,13 +230,21 @@ def search_skills(jobDescriptionDiv, jobDict, userSearch): # required Skills nee
 def score(jobDict, userSearch):
     if userSearch["education"] in jobDict["education"]:
         jobDict["score"] += 1
+        print("education!")
     if jobDict["job_type"] == userSearch["job_type"]:
         jobDict["score"] += 1
-    if userSearch["experience"]:
+        print("Job Type!")
+    if userSearch["experience"] and jobDict["experience"]:
         if jobDict["experience"] <= int(userSearch["experience"]):
             jobDict["score"] += 1
+            print("experience!")
     if len(jobDict["required_skills"]) < 0:
         jobDict["score"] += (len(jobDict["required_skills"]) / len(userSearch["required_skills"]))
+    if jobDict["income"] and userSearch["income"]:
+        if jobDict["income"] >= int(userSearch["income"]):
+            jobDict["score"] += 1
+            print("income!")
+
         
 
 def waitForRefresh(driver, base):
