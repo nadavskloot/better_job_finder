@@ -5,7 +5,7 @@ from flask_marshmallow import Marshmallow
 import pprint
 import sys
 sys.path.append('../')
-# from scrapers import linkedin_scraping
+from scrapers import linkedin_scraping
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jobs.db'
@@ -48,10 +48,10 @@ def getSearchResults():
     if request.method == 'POST':
         db.session.query(Jobs).delete()
         db.session.commit()
-        # userSearch = dict(request.get_json())
-        # linkedinJobs = linkedin_scraping.main(userSearch)
-        # pp = pprint.PrettyPrinter()
-        # pp.pprint(linkedinJobs)
+        userSearch = dict(request.get_json())
+        linkedinJobs = linkedin_scraping.main(userSearch)
+        pp = pprint.PrettyPrinter()
+        pp.pprint(linkedinJobs)
         return jsonify(response_object)
     else:
         new_job = Jobs(

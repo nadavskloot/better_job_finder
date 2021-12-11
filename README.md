@@ -11,3 +11,8 @@ Bugs:
 1. Glassdoor and linkedin sometimes autofill wrong search
 2. LinkedIn shuts down bot if used too much
 
+
+# Installation:
+
+run:
+python -m textblob.download_corpora
