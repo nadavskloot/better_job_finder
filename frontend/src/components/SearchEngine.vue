@@ -58,7 +58,7 @@
                 search_data: {
                     job_title: "",
                     location: "",
-                    income: "",
+                    income: null,
                     key_words: "",
                     required_skills: "",
                     experience: null,
@@ -145,6 +145,7 @@ select {
 }
 
 .range_input {
+    background-color: red;
     height: 11%;
     width: 100%;
     padding-top: 1px;

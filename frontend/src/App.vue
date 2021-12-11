@@ -4,13 +4,11 @@
   </header>
   <div id="app">
     <SearchEngine />
-    <JobResults />
   </div>
 </template>
 
 <script>
 import SearchEngine from './components/SearchEngine.vue'
-import JobResults from './components/JobResults.vue'
 
 export default {
   name: 'App',
