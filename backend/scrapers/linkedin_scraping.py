@@ -67,8 +67,7 @@ def scrape(driver, userSearch):
             "employer": jobEmployer.text.strip(),
             "location": jobLocation.text.strip(),
             'income': None,
-            'key_words': None, 
-            'required_skills': None, 
+            'required_skills': [], 
             'experience': None, 
             'education': [], 
             'job_type': None,
@@ -95,6 +94,8 @@ def scrape(driver, userSearch):
         findExperience(jobDescriptionDiv, jobDict)
         # requiredSkills = userSearch["required_skills"]
         search_skills(jobDescriptionDiv, jobDict, userSearch)
+
+        score(jobDict, userSearch)
 
         pp = pprint.PrettyPrinter()
         pp.pprint(jobDict)
@@ -198,7 +199,19 @@ def search_skills(jobDescriptionDiv, jobDict, userSearch): # required Skills nee
         match = re.search(re.escape(skill), string.lower())
         if match:
             print(match.group())
-            jobDict["required_skills"] = match.group()
+            jobDict["required_skills"].append(str(match.group()).strip())
+
+def score(jobDict, userSearch):
+    if userSearch["education"] in jobDict["education"]:
+        jobDict["score"] += 1
+    if jobDict["job_type"] == userSearch["job_type"]:
+        jobDict["score"] += 1
+    if userSearch["experience"]:
+        if jobDict["experience"] <= int(userSearch["experience"]):
+            jobDict["score"] += 1
+    if len(jobDict["required_skills"]) < 0:
+        jobDict["score"] += (len(jobDict["required_skills"]) / len(userSearch["required_skills"]))
+        
 
 def waitForRefresh(driver, base):
     try:

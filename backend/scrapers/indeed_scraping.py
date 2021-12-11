@@ -79,7 +79,6 @@ def scrape(driver):
             "employer": jobEmployer.text.strip(),
             "location": jobLocation.text.strip(),
             'income': None,
-            'key_words': None, 
             'required_skills': None, 
             'experience': None, 
             'education': [], 
