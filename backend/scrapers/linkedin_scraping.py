@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.webdriver.chrome import service
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -8,20 +9,29 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
 
 from bs4 import BeautifulSoup
+import platform
 import requests
 import re
 import sys
 import random
 import pprint
 import time
+import os
 from textblob import TextBlob
 from word2number import w2n
 
 def setupDriver():
     chrome_options = Options()
-    # chrome_options.add_experimental_option("detach", True) # So window doesn't close
-    chrome_options.add_argument("--headless") # So window never opens
-    s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver')
+    chrome_options.add_experimental_option("detach", True) # So window doesn't close
+    # chrome_options.add_argument("--headless") # So window never opens
+    plat = platform.system()
+    print(plat)
+    # s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/Mac/chromedriver')
+    dirname = os.path.dirname(__file__)
+    path = os.path.join(dirname, 'chromedrivers/'+ plat +'/chromedriver')
+    
+    print(os.path.exists(path))
+    s=Service(path)
     driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
     return driver
@@ -34,6 +44,8 @@ def search(driver, kewWord, location):
     jobLocation.clear()
     jobLocation.send_keys(location)
     base = driver.find_element(By.TAG_NAME, "html")
+    sleepTime = random.randint(4,10)
+    time.sleep(sleepTime)
     jobInput.send_keys(Keys.RETURN) # search
     waitForRefresh(driver, base)
     return driver
