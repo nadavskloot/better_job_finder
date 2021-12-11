@@ -2,7 +2,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+import pprint
 import sys
+sys.path.append('../')
+from scrapers import linkedin_scraping
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jobs.db'
@@ -38,9 +41,15 @@ class JobsSchema(ma.ModelSchema):
 # @cross_origin(origin="*", headers=['content-type'])
 def getSearchResults():
     response_object = {'status': 'success'}
-
+    print(request.get_json())
+    
+    
     if request.method == 'POST':
         db.drop_all()
+        userSearch = dict(request.get_json())
+        linkedinJobs = linkedin_scraping.main(userSearch)
+        pp = pprint.PrettyPrinter()
+        pp.pprint(linkedinJobs)
         return jsonify(response_object)
     else:
         new_job = Jobs(

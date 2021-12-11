@@ -1,7 +1,12 @@
 # better_job_finder
- 
-Test for other Searches!!!
 
-improvements: Make scraping find from structure rather than tags. (glassdoor especially)
+improvements:
+1. Make some feilds select components.
+2. Make good way to go through description tags without repeating
+3. Make scraping find from structure rather than tags. (glassdoor especially)
+4. add Zip recruiter?
 
-Bugs: glassdoor sometimes autofill wrong search
+Bugs: 
+1. Glassdoor and linkedin sometimes autofill wrong search
+2. LinkedIn shuts down bot if used too much
+

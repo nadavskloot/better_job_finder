@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 import sys
+import random
 import pprint
 import time
 from textblob import TextBlob
@@ -39,7 +40,7 @@ def search(driver, kewWord, location):
     waitForRefresh(driver, base)
     return driver
 
-def scrape(driver):
+def scrape(driver, userInput):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobsUl = soup.find("ul", attrs={"class": re.compile("jobs-search__results-list")})
@@ -55,7 +56,8 @@ def scrape(driver):
         # waitForRefresh(driver, base)
         
         # soup = BeautifulSoup(driver.page_source, "html.parser")
-        time.sleep(2)
+        sleepTime = random.randint(4,10)
+        time.sleep(sleepTime)
         base_url = job['href']
         r = requests.get(base_url)
         soup = BeautifulSoup(r.content, 'html.parser')
@@ -82,15 +84,18 @@ def scrape(driver):
         jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("show-more-less-htm")})
         
         search_description(jobDescriptionDiv.text)
-        yearsExperiance = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
-        educationLevel = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master")])
+        yearsExperienceSentence = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
+        educationLevelSentence = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master"), re.compile("BS"), re.compile("MS")])
+        if yearsExperienceSentence:
+            yearsExperience = [int(s) for s in re.findall(r'\b\d+\b', str(yearsExperienceSentence))]
+            print(yearsExperience)
 
         # print(jobHeader)
         print(jobTitle.string)
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
-        print(yearsExperiance)
-        print(educationLevel)
+        print(yearsExperienceSentence)
+        print(educationLevelSentence)
         # print(jobInfo)
         # print(jobDescriptionDiv.text)
         print()
@@ -112,10 +117,18 @@ def waitForRefresh(driver, base):
         print("baddd")
         raise TimeoutError
 
+def main(keyWord, location,):
+    print("hello")
+    driver = setupDriver()
+    driver = search(driver, keyWord, location)
+    scrape(driver)
+    driver.quit()
+
 if __name__ == "__main__":
     keyWord = sys.argv[1]
     location = sys.argv[2]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
+    userInput = {}
     scrape(driver)
     driver.quit()
