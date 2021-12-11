@@ -107,7 +107,7 @@ def findEducation(jobDescriptionDiv, jobDict):
     blob = TextBlob(str(jobDescriptionDiv.text))
     # print(blob)
     educationRegex = {"BS": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
-                       "MS": [r"[Mm]aster", r"\bMS ", r"\bM.S. "],
+                       "MS": [r"\b[Mm]aster", r"\bMS ", r"\bM.S. "],
                        "PhD": [ r"PhD", r"\b[Dd]octorate "]}
     for sentence in blob.sentences:
         for educationLevel in educationRegex.keys():
