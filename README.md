@@ -7,6 +7,7 @@ improvements:
 4. add Zip recruiter?
 
 Bugs: 
+1. LinkedIn just breaks at start sometimes
 1. Glassdoor and linkedin sometimes autofill wrong search
 2. LinkedIn shuts down bot if used too much
 
