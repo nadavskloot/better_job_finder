@@ -17,16 +17,16 @@ ma = Marshmallow(app)
 # Database of jobs
 class Jobs(db.Model):
     id = db.Column(db.Integer, primary_key = True)
-    score = db.Column(db.Integer)
+    score = db.Column(db.Float)
     job_title = db.Column(db.String(200), nullable = False)
     employer = db.Column(db.String(200), nullable = False)
     location = db.Column(db.String(200))
-    salary = db.Column(db.String(200))
-    required_skills = db.Column(db.String(200))
-    years_experience = db.Column(db.String(200))
-    education_level = db.Column(db.String(200))
-    employment_type = db.Column(db.String(200))
-    job_post_link = db.Column(db.String(300))
+    salary = db.Column(db.Integer, nullable = True)
+    required_skills = db.Column(db.String(200), nullable = True)
+    years_experience = db.Column(db.Integer, nullable = True)
+    education_level = db.Column(db.String(200), nullable = True)
+    employment_type = db.Column(db.String(200), nullable = True)
+    job_post_link = db.Column(db.String(300), nullable = True)
 
     def __repr__(self):
         return '(Job Title: %r)' % self.job_title
@@ -50,30 +50,35 @@ def getSearchResults():
         db.session.commit()
         userSearch = dict(request.get_json())
         linkedinJobs = linkedin_scraping.main(userSearch)
+        for job in linkedinJobs:
+            job["required_skills"] = str(job["required_skills"])
+            job["education_level"] = str(job["education_level"])
+            db.session.add(Jobs(**job))
+            db.session.commit()
         pp = pprint.PrettyPrinter()
         pp.pprint(linkedinJobs)
         return jsonify(response_object)
     else:
-        new_job = Jobs(
-            score = 2,
-            job_title = "Software Engineer",
-            employer = "Google",
-            location = "San Francisco",
-            salary = "$100,000",
-            job_post_link = "www.google.com"
-        )
-        db.session.add(new_job)
-        db.session.commit()
-        another_job = Jobs(
-            score = 1,
-            job_title = "QA Engineer",
-            employer = "Google",
-            location = "San Francisco",
-            salary = "$100,000",
-            job_post_link = "www.google.com"
-        )
-        db.session.add(another_job)
-        db.session.commit()
+        # new_job = Jobs(
+        #     score = 2,
+        #     job_title = "Software Engineer",
+        #     employer = "Google",
+        #     location = "San Francisco",
+        #     salary = "$100,000",
+        #     job_post_link = "www.google.com"
+        # )
+        # db.session.add(new_job)
+        # db.session.commit()
+        # another_job = Jobs(
+        #     score = 1,
+        #     job_title = "QA Engineer",
+        #     employer = "Google",
+        #     location = "San Francisco",
+        #     salary = "$100,000",
+        #     job_post_link = "www.google.com"
+        # )
+        # db.session.add(another_job)
+        # db.session.commit()
         jobs = Jobs.query.order_by(Jobs.score * -1).all()
         jobs_schema = JobsSchema(many=True)
         output = jobs_schema.dump(jobs)

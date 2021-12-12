@@ -146,16 +146,16 @@ def scrape(driver, userSearch):
             "span", attrs={"class": "topcard__flavor"}).findNextSibling()
 
         jobDict = {
-            "title": jobTitle.string.strip(),
+            "job_title": jobTitle.string.strip(),
             "employer": jobEmployer.text.strip(),
             "location": jobLocation.text.strip(),
-            'income': None,
+            'salary': None,
             'required_skills': [],
-            'experience': None,
-            'education': [],
-            'job_type': None,
+            'years_experience': None,
+            'education_level': [],
+            'employment_type': None,
             'score': 0,
-            "link": base_url
+            "job_post_link": base_url
         }
 
         jobInfoUl = soup.find(
@@ -164,7 +164,7 @@ def scrape(driver, userSearch):
             jobType = jobInfoUl.find("h3", text=re.compile(
                 "Employment type")).findNextSibling()
             print(jobType.text.strip())
-            jobDict["job_type"] = jobType.text.strip()
+            jobDict["employment_type"] = jobType.text.strip()
 
         jobDescriptionDiv = soup.find(
             "div", attrs={"class": re.compile("show-more-less-htm")})
@@ -176,8 +176,8 @@ def scrape(driver, userSearch):
         # search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
         findEducation(jobDescriptionDiv, jobDict)
         findExperience(jobDescriptionDiv, jobDict)
-        # requiredSkills = userSearch["required_skills"]
-        search_skills(jobDescriptionDiv, jobDict, userSearch)
+        if userSearch["required_skills"].strip() != "":
+            search_skills(jobDescriptionDiv, jobDict, userSearch)
 
         score(jobDict, userSearch)
 
@@ -203,8 +203,8 @@ def findEducation(jobDescriptionDiv, jobDict):
                     # print(str(sentence))
                     # print(match.group())
                     # print(educationLevel)
-                    if educationLevel not in jobDict["education"]:
-                        jobDict["education"].append(educationLevel)
+                    if educationLevel not in jobDict["education_level"]:
+                        jobDict["education_level"].append(educationLevel)
 
 
 def findExperience(jobDescriptionDiv, jobDict):
@@ -244,85 +244,44 @@ def sentenceToExperience(sentence, jobDict):
     if matches:
         # print(matches)
         # print(int(min(matches)))
-        if jobDict["experience"]:
-            jobDict["experience"] = max(
-                jobDict["experience"], int(min(matches)))
+        if jobDict["years_experience"]:
+            jobDict["years_experience"] = max(
+                jobDict["years_experience"], int(min(matches)))
         else:
-            jobDict["experience"] = int(min(matches))
+            jobDict["years_experience"] = int(min(matches))
 
 
-# def scoreEducation(jobDict, userSearch):
-#     userEducation = userSearch["education"].strip()
-#     if userEducation:
-#         educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS", r"\bB.S.", r"\bCollege Diploma"],
-#                        "MS": [r"\b[Mm]asters", r"\bMS", r"\bM.S."],
-#                        "PhD": [ r"\bPhD", r"\b[Dd]octorate"]}
-#         for educationLevel in educationRegex.keys():
-#             for regex in educationRegex[educationLevel]:
-#                 match = re.search(regex, userEducation)
-#                 if match:
-
-
-def search_description(jobDescriptionDiv, jobDict):
-
-    yearsExperienceSentence = jobDescriptionDiv.find(
-        text=re.compile("year(.)*experience"))
-    if yearsExperienceSentence:
-        yearsExperience = [int(s) for s in re.findall(
-            r'\b\d+\b', str(yearsExperienceSentence))]
-        if len(yearsExperience) > 0:
-            jobDict["experience"] = yearsExperience[0]
-            print(yearsExperience)
-        print(yearsExperienceSentence)
-    educationLevelSentence = jobDescriptionDiv.find(text=[re.compile(
-        "Bachelor"), re.compile("Master"), re.compile("BS "), re.compile(" MS ")])
-    jobDict["education"] = str(educationLevelSentence).strip()
-    print(educationLevelSentence)
-
-    blob = TextBlob(jobDescriptionDiv.text)
-    for sentence in blob.sentences:
-        if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
-            print(sentence)
-
-
-# required Skills need to be a list and lowercase!!!!
+# required Skills need to be comma seperated!!
 def search_skills(jobDescriptionDiv, jobDict, userSearch):
-    # blob = TextBlob(jobDescriptionDiv.text)
-    # for sentence in blob.sentences:
-    #     if requiredSkills in sentence.words:
-    #         print(sentence)
-    # if requiredSkills in blob.words:
-    #     jobDict["required_skills"] = True
     skills = userSearch["required_skills"].split(",")
     print(skills)
     string = str(jobDescriptionDiv.text)
     for skill in skills:
         match = re.search(re.escape(skill.strip().lower()), string.lower())
-        # match = re.search(skill, string.lower())
         if match:
             print(match.group())
             jobDict["required_skills"].append(str(match.group()).strip())
 
 
 def score(jobDict, userSearch):
-    if userSearch["education"] in jobDict["education"]:
+    if userSearch["education"] in jobDict["education_level"]:
         jobDict["score"] += 1
         print("education!")
-    if jobDict["job_type"] == userSearch["job_type"]:
+    if jobDict["employment_type"] == userSearch["job_type"]:
         jobDict["score"] += 1
         print("Job Type!")
-    if userSearch["experience"] and jobDict["experience"]:
-        if jobDict["experience"] <= int(userSearch["experience"]):
+    if userSearch["experience"] and jobDict["years_experience"]:
+        if jobDict["years_experience"] <= int(userSearch["experience"]):
             jobDict["score"] += 1
             print("experience!")
     if len(jobDict["required_skills"]) > 0:
         jobDict["score"] += (len(jobDict["required_skills"]) /
                              len(userSearch["required_skills"].split(",")))
         print("skills!")
-    if jobDict["income"] and userSearch["income"]:
-        if jobDict["income"] >= int(userSearch["income"]):
+    if jobDict["salary"] and userSearch["income"]:
+        if jobDict["salary"] >= int(userSearch["income"]):
             jobDict["score"] += 1
-            print("income!")
+            print("salary!")
 
 
 def waitForRefresh(driver, base):
