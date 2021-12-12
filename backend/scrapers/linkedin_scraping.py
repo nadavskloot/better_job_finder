@@ -25,25 +25,12 @@ from word2number import w2n
 
 def setupDriver():
     chrome_options = Options()
-    chrome_options.add_experimental_option(
-        "detach", True)  # So window doesn't close
-    # chrome_options.add_argument("--headless") # So window never opens
+    # chrome_options.add_experimental_option("detach", True)  # So window doesn't close
+    chrome_options.add_argument("--headless") # So window never opens
     driverPath = downloadDriver()
     print('*************************** driverpath:', driverPath)
     s = Service(driverPath)
-    # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
-    # driver = webdriver.Chrome(service=s, options=chrome_options)
-    # # chrome_options.add_experimental_option("detach", True) # So window doesn't close
-    # chrome_options.add_argument("--headless") # So window never opens
-    # plat = platform.system()
-    # print(plat)
-    # # s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/Mac/chromedriver')
-    # dirname = os.path.dirname(__file__)
-    # path = os.path.join(dirname, 'chromedrivers/'+ plat +'/chromedriver')
-    
-    # print(os.path.exists(path))
-    # s=Service(path)
-    # driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
     return driver
 
@@ -186,7 +173,6 @@ def scrape(driver, userSearch):
         # search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
         findEducation(jobDescriptionDiv, jobDict)
         findExperience(jobDescriptionDiv, jobDict)
-        # requiredSkills = userSearch["required_skills"]
         if userSearch["required_skills"].strip() != "":
             search_skills(jobDescriptionDiv, jobDict, userSearch)
 
@@ -261,54 +247,13 @@ def sentenceToExperience(sentence, jobDict):
             jobDict["years_experience"] = int(min(matches))
 
 
-# def scoreEducation(jobDict, userSearch):
-#     userEducation = userSearch["education"].strip()
-#     if userEducation:
-#         educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS", r"\bB.S.", r"\bCollege Diploma"],
-#                        "MS": [r"\b[Mm]asters", r"\bMS", r"\bM.S."],
-#                        "PhD": [ r"\bPhD", r"\b[Dd]octorate"]}
-#         for educationLevel in educationRegex.keys():
-#             for regex in educationRegex[educationLevel]:
-#                 match = re.search(regex, userEducation)
-#                 if match:
-
-
-def search_description(jobDescriptionDiv, jobDict):
-
-    yearsExperienceSentence = jobDescriptionDiv.find(
-        text=re.compile("year(.)*experience"))
-    if yearsExperienceSentence:
-        yearsExperience = [int(s) for s in re.findall(
-            r'\b\d+\b', str(yearsExperienceSentence))]
-        if len(yearsExperience) > 0:
-            jobDict["years_experience"] = yearsExperience[0]
-            print(yearsExperience)
-        print(yearsExperienceSentence)
-    educationLevelSentence = jobDescriptionDiv.find(text=[re.compile(
-        "Bachelor"), re.compile("Master"), re.compile("BS "), re.compile(" MS ")])
-    jobDict["education"] = str(educationLevelSentence).strip()
-    print(educationLevelSentence)
-
-    blob = TextBlob(jobDescriptionDiv.text)
-    for sentence in blob.sentences:
-        if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
-            print(sentence)
-
-
-# required Skills need to be a list and lowercase!!!!
+# required Skills need to be comma seperated!!
 def search_skills(jobDescriptionDiv, jobDict, userSearch):
-    # blob = TextBlob(jobDescriptionDiv.text)
-    # for sentence in blob.sentences:
-    #     if requiredSkills in sentence.words:
-    #         print(sentence)
-    # if requiredSkills in blob.words:
-    #     jobDict["required_skills"] = True
     skills = userSearch["required_skills"].split(",")
     print(skills)
     string = str(jobDescriptionDiv.text)
     for skill in skills:
         match = re.search(re.escape(skill.strip().lower()), string.lower())
-        # match = re.search(skill, string.lower())
         if match:
             print(match.group())
             jobDict["required_skills"].append(str(match.group()).strip())
