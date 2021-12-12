@@ -17,26 +17,36 @@ import random
 import pprint
 import time
 import os
+import zipfile
+import xmltodict
 from textblob import TextBlob
 from word2number import w2n
 
 
-
 def setupDriver():
     chrome_options = Options()
-    # chrome_options.add_experimental_option("detach", True) # So window doesn't close
-    chrome_options.add_argument("--headless") # So window never opens
-    plat = platform.system()
-    print(plat)
-    # s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/Mac/chromedriver')
-    dirname = os.path.dirname(__file__)
-    path = os.path.join(dirname, 'chromedrivers/'+ plat +'/chromedriver')
+    chrome_options.add_experimental_option(
+        "detach", True)  # So window doesn't close
+    # chrome_options.add_argument("--headless") # So window never opens
+    driverPath = downloadDriver()
+    print('*************************** driverpath:', driverPath)
+    s = Service(driverPath)
+    # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    # driver = webdriver.Chrome(service=s, options=chrome_options)
+    # # chrome_options.add_experimental_option("detach", True) # So window doesn't close
+    # chrome_options.add_argument("--headless") # So window never opens
+    # plat = platform.system()
+    # print(plat)
+    # # s=Service('/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/Mac/chromedriver')
+    # dirname = os.path.dirname(__file__)
+    # path = os.path.join(dirname, 'chromedrivers/'+ plat +'/chromedriver')
     
-    print(os.path.exists(path))
-    s=Service(path)
-    driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    # print(os.path.exists(path))
+    # s=Service(path)
+    # driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver.get("https://www.linkedin.com/jobs")
     return driver
+
 
 def search(driver, kewWord, location):
     jobInput = driver.find_elements(By.NAME, "keywords")[0]
@@ -46,41 +56,104 @@ def search(driver, kewWord, location):
     jobLocation.clear()
     jobLocation.send_keys(location)
     base = driver.find_element(By.TAG_NAME, "html")
-    sleepTime = random.randint(4,10)
+    sleepTime = random.randint(4, 10)
     time.sleep(sleepTime)
-    jobInput.send_keys(Keys.RETURN) # search
+    jobInput.send_keys(Keys.RETURN)  # search
     waitForRefresh(driver, base)
     return driver
+
+
+def downloadDriver():
+    dirname = os.path.dirname(__file__)
+    driver_folder = os.path.join(dirname, 'chromedrivers')
+    os.makedirs(driver_folder, exist_ok=True)
+
+    osname = platform.system()
+    if osname == 'Darwin':
+        chromeVersion = os.popen(
+            '/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version').read().strip('Google Chrome ').strip()
+    elif osname == 'Windows':
+        chromeVersion = os.popen(
+            'C:\Program Files\Google\Chrome\Application\chrome.exe --version').read().strip('Google Chrome ').strip()
+    elif osname == 'Linux':
+        chromeVersion = os.popen(
+            '/usr/bin/google-chrome --version').read().strip('Google Chrome ').strip()
+
+    if os.path.exists(driver_folder+'/chromedriver'):
+        if os.popen(f'{driver_folder}/chromedriver -v').read().split(' ')[1].split('.')[0:2] == chromeVersion.split('.')[0:2]:
+            print('*************************************', 'keeping driver')
+            return driver_folder+'/chromedriver'
+        else:
+            print('*************************************', 'replacing driver')
+            os.remove(driver_folder+'/chromedriver')
+    else:
+        print('*************************************', 'creating driver')
+
+    r = requests.get(
+        'https://chromedriver.storage.googleapis.com/?delimiter=/&prefix=')
+    json = xmltodict.parse(r.content)
+    downloadVersion = ''
+    for i in json['ListBucketResult']['CommonPrefixes']:
+        if i['Prefix'].split('.')[0:2] == chromeVersion.split('.')[0:2]:
+            downloadVersion = i['Prefix'][:-1]
+            break
+
+    if osname == 'Darwin':
+        if platform.processor() == 'arm' and int(chromeVersion.split('.')[0]) > 88:
+            downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_mac64_m1.zip'
+        else:
+            downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_mac64.zip'
+    elif osname == 'Windows':
+        downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_win32.zip'
+    elif osname == 'Linux':
+        downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_linux64.zip'
+    r_down = requests.get(downloadLink, allow_redirects=True)
+    # https://stackoverflow.com/questions/49787327/selenium-on-mac-message-chromedriver-executable-may-have-wrong-permissions
+    # https://stackoverflow.com/questions/36745577/how-do-you-create-in-python-a-file-with-permissions-other-users-can-write
+    zip_location = f'{driver_folder}/{osname}-{downloadVersion}-driver.zip'
+    open(os.open(zip_location,
+                 os.O_CREAT | os.O_WRONLY, 0o755), 'wb').write(r_down.content)
+    with zipfile.ZipFile(zip_location, 'r') as zip_ref:
+        zip_ref.extractall(driver_folder)
+    os.chmod(driver_folder+'/chromedriver', 0o755)
+    os.remove(zip_location)
+    return driver_folder+'/chromedriver'
+
 
 def scrape(driver, userSearch):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
-    jobsUl = soup.find("ul", attrs={"class": re.compile("jobs-search__results-list")})
+    jobsUl = soup.find(
+        "ul", attrs={"class": re.compile("jobs-search__results-list")})
     if not jobsUl:
         print("NO UL")
         print(soup)
-    jobLinks = jobsUl.find_all("a", href=True, attrs={"class": re.compile("base-card__full-link")})
+    jobLinks = jobsUl.find_all("a", href=True, attrs={
+                               "class": re.compile("base-card__full-link")})
     print(len(jobLinks))
-    
 
     linkedinJobs = []
     for job in jobLinks:
         print(job['href'])
 
-        sleepTime = random.randint(4,10)
+        sleepTime = random.randint(4, 10)
         time.sleep(sleepTime)
 
         base_url = job['href']
         r = requests.get(base_url)
         soup = BeautifulSoup(r.content, 'html.parser')
 
-        jobHeader = soup.find("section", attrs={"class": re.compile("top-card-layout")})
+        jobHeader = soup.find(
+            "section", attrs={"class": re.compile("top-card-layout")})
         if not jobHeader:
             driver.get(base_url)
             print(soup)
-        jobTitle = jobHeader.find("h1", attrs={"class": re.compile("topcard__title")})
-        jobEmployer = jobHeader.find("a", attrs={"class": re.compile("topcard__org-name-link")})
-        jobLocation = jobHeader.find("span", attrs={"class": "topcard__flavor"}).findNextSibling()
+        jobTitle = jobHeader.find(
+            "h1", attrs={"class": re.compile("topcard__title")})
+        jobEmployer = jobHeader.find(
+            "a", attrs={"class": re.compile("topcard__org-name-link")})
+        jobLocation = jobHeader.find(
+            "span", attrs={"class": "topcard__flavor"}).findNextSibling()
 
         jobDict = {
             "job_title": jobTitle.string.strip(),
@@ -95,20 +168,21 @@ def scrape(driver, userSearch):
             "job_post_link": base_url
         }
 
-        jobInfoUl = soup.find("ul", attrs={"class": re.compile("description__job-criteria-list")})
+        jobInfoUl = soup.find(
+            "ul", attrs={"class": re.compile("description__job-criteria-list")})
         if jobInfoUl:
-            jobType = jobInfoUl.find("h3", text=re.compile("Employment type")).findNextSibling()
+            jobType = jobInfoUl.find("h3", text=re.compile(
+                "Employment type")).findNextSibling()
             print(jobType.text.strip())
             jobDict["employment_type"] = jobType.text.strip()
 
-        
-        jobDescriptionDiv = soup.find("div", attrs={"class": re.compile("show-more-less-htm")})
-        
-        
+        jobDescriptionDiv = soup.find(
+            "div", attrs={"class": re.compile("show-more-less-htm")})
+
         print(jobTitle.string)
         print(jobEmployer.text.strip())
         print(jobLocation.text.strip())
-        
+
         # search_description(jobDescriptionDiv, jobDict) # educationLevel and years exeriance
         findEducation(jobDescriptionDiv, jobDict)
         findExperience(jobDescriptionDiv, jobDict)
@@ -124,6 +198,7 @@ def scrape(driver, userSearch):
         linkedinJobs.append(jobDict)
         # print(str(jobDescriptionDiv.text))
     return linkedinJobs
+
 
 def findEducation(jobDescriptionDiv, jobDict):
     blob = TextBlob(str(jobDescriptionDiv.text))
@@ -142,14 +217,16 @@ def findEducation(jobDescriptionDiv, jobDict):
                     if educationLevel not in jobDict["education_level"]:
                         jobDict["education_level"].append(educationLevel)
 
+
 def findExperience(jobDescriptionDiv, jobDict):
-    yearsExperienceTag = jobDescriptionDiv.find(text=[re.compile(r"\b\d+\b(.)*((year)|(years))(.)*experience")])
+    yearsExperienceTag = jobDescriptionDiv.find(
+        text=[re.compile(r"\b\d+\b(.)*((year)|(years))(.)*experience")])
     children = jobDescriptionDiv.findChildren()
     # for tag in jobDescriptionDiv:
     #     print(tag)
     #     print()
-    experienceRegex = [r"\b\d+\b(.)*((year)|(years))(.)*experience", 
-                    r"(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )(.)*[(year)|(years)](.)*experience"]
+    experienceRegex = [r"\b\d+\b(.)*((year)|(years))(.)*experience",
+                       r"(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )(.)*[(year)|(years)](.)*experience"]
     for child in children:
         for child2 in child:
             # print(child2.text)
@@ -165,8 +242,10 @@ def findExperience(jobDescriptionDiv, jobDict):
                     # if match2:
                     #     print("match2: ", sentence)
 
+
 def sentenceToExperience(sentence, jobDict):
-    matches = re.findall("(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
+    matches = re.findall(
+        "(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
     if matches:
         for match in matches:
             num = w2n.word_to_num(match)
@@ -174,16 +253,15 @@ def sentenceToExperience(sentence, jobDict):
             sentence = sentence.replace(match, str(num))
     matches = re.findall(r"\d+", sentence)
     if matches:
-    # print(matches)
+        # print(matches)
         # print(int(min(matches)))
         if jobDict["years_experience"]:
             jobDict["years_experience"] = max(jobDict["years_experience"], int(min(matches)))
         else:
             jobDict["years_experience"] = int(min(matches))
 
-    
 
-# def scoreEducation(jobDict, userSearch): 
+# def scoreEducation(jobDict, userSearch):
 #     userEducation = userSearch["education"].strip()
 #     if userEducation:
 #         educationRegex = {"BS": [r"\b[Bb]achelor", r"\bBS", r"\bB.S.", r"\bCollege Diploma"],
@@ -196,15 +274,18 @@ def sentenceToExperience(sentence, jobDict):
 
 
 def search_description(jobDescriptionDiv, jobDict):
-            
-    yearsExperienceSentence = jobDescriptionDiv.find(text=re.compile("year(.)*experience"))
+
+    yearsExperienceSentence = jobDescriptionDiv.find(
+        text=re.compile("year(.)*experience"))
     if yearsExperienceSentence:
-        yearsExperience = [int(s) for s in re.findall(r'\b\d+\b', str(yearsExperienceSentence))]
+        yearsExperience = [int(s) for s in re.findall(
+            r'\b\d+\b', str(yearsExperienceSentence))]
         if len(yearsExperience) > 0:
             jobDict["years_experience"] = yearsExperience[0]
             print(yearsExperience)
         print(yearsExperienceSentence)
-    educationLevelSentence = jobDescriptionDiv.find(text=[re.compile("Bachelor"), re.compile("Master"), re.compile("BS "), re.compile(" MS ")])
+    educationLevelSentence = jobDescriptionDiv.find(text=[re.compile(
+        "Bachelor"), re.compile("Master"), re.compile("BS "), re.compile(" MS ")])
     jobDict["education"] = str(educationLevelSentence).strip()
     print(educationLevelSentence)
 
@@ -213,7 +294,9 @@ def search_description(jobDescriptionDiv, jobDict):
         if re.match("Bachelor", str(sentence)) or re.match("BS ", str(sentence)):
             print(sentence)
 
-def search_skills(jobDescriptionDiv, jobDict, userSearch): # required Skills need to be a list and lowercase!!!!
+
+# required Skills need to be a list and lowercase!!!!
+def search_skills(jobDescriptionDiv, jobDict, userSearch):
     # blob = TextBlob(jobDescriptionDiv.text)
     # for sentence in blob.sentences:
     #     if requiredSkills in sentence.words:
@@ -229,6 +312,7 @@ def search_skills(jobDescriptionDiv, jobDict, userSearch): # required Skills nee
         if match:
             print(match.group())
             jobDict["required_skills"].append(str(match.group()).strip())
+
 
 def score(jobDict, userSearch):
     if userSearch["education"] in jobDict["education_level"]:
@@ -249,17 +333,17 @@ def score(jobDict, userSearch):
             jobDict["score"] += 1
             print("salary!")
 
-        
 
 def waitForRefresh(driver, base):
     try:
         element = WebDriverWait(driver, 20).until(
-        EC.staleness_of(base)
-    )
+            EC.staleness_of(base)
+        )
         return
     except TimeoutException:
         print("baddd")
         raise TimeoutError
+
 
 def main(userSearch):
     keyWord = userSearch["job_title"]
@@ -270,10 +354,12 @@ def main(userSearch):
     driver.quit()
     return linkedinJobs
 
+
 if __name__ == "__main__":
     keyWord = sys.argv[1]
     location = sys.argv[2]
     driver = setupDriver()
     driver = search(driver, keyWord, location)
-    scrape(driver, {'job_title': '', 'location': '', 'income': '', 'key_words': '', 'required_skills': ['python'], 'experience': '', 'education': '', 'job_type': ''})
+    scrape(driver, {'job_title': '', 'location': '', 'income': '', 'key_words': '',
+                    'required_skills': ['python'], 'experience': '', 'education': '', 'job_type': ''})
     driver.quit()
