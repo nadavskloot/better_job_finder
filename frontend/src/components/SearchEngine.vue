@@ -6,7 +6,8 @@
                 <input v-model="search_data.job_title" type="text" placeholder="'Software Engineer, Financial Manager, etc.'">
 
                 <label>Your Years of Experience</label>
-                <input class="range_input" v-model="search_data.experience" type="range" min="0" max="50">
+                <input class="range_input" v-model="search_data.experience" type="range" min="0" max="60">
+                <output>{{search_data.experience}}</output>
 
                 <label>Your Education Level</label>
                 <select v-model="search_data.education">
@@ -24,7 +25,8 @@
                 <input v-model="search_data.location" type="text" placeholder="Location">
 
                 <label>Expected Yearly Income</label>
-                <input class="range_input" v-model="search_data.income" type="range" min="0" max="500,000">
+                <input class="range_input" v-model="search_data.income" type="range" min="0" max="500000">
+                <output>${{search_data.income}}</output>
 
                 <label>Employment Type</label>
                 <select v-model="search_data.job_type">
@@ -58,10 +60,10 @@
                 search_data: {
                     job_title: "",
                     location: "",
-                    income: null,
+                    income: 0,
                     key_words: "",
                     required_skills: "",
-                    experience: null,
+                    experience: 0,
                     education: "",
                     job_type: ""
                 },
@@ -145,7 +147,6 @@ select {
 }
 
 .range_input {
-    background-color: red;
     height: 11%;
     width: 100%;
     padding-top: 1px;
