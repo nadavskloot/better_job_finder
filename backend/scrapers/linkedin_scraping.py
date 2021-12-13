@@ -26,9 +26,8 @@ from word2number import w2n
 
 def setupDriver():
     chrome_options = Options()
-    chrome_options.add_experimental_option(
-        "detach", True)  # So window doesn't close
-    # chrome_options.add_argument("--headless") # So window never opens
+    # chrome_options.add_experimental_option("detach", True)  # So window doesn't close
+    chrome_options.add_argument("--headless") # So window never opens
     driverPath = downloadDriver()
     print('*************************** driverpath:', driverPath)
     s = Service(driverPath)
