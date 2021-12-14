@@ -1,5 +1,5 @@
 <template>
-    <div id="searchEngine">
+    <div id="home">
         <div id="search_div">
             <form id="search_container">
                 <div id="left">
@@ -129,6 +129,7 @@
                 </tbody>
             </table>
         </div>
+        <!-- If reults are taking a long time to fetch, this will display to let the user know -->
         <div :style="{ display: response_waiting }" id="response_waiting_alert">
             <div>
                 Sorry! We understand that this isn't ideal but, this site is
@@ -170,6 +171,11 @@ export default {
         };
     },
     methods: {
+        // Executes POST request to send user search input to backend, then
+        // executes GET request to grab the job results from Flask database
+        // and populates an HTML table with said results
+        // Utilizes axios (a Vue.js wrapper for AJAX) to load the results
+        // without refreshing the page
         getSearchResults() {
             const path = "http://127.0.0.1:5000/getSearchResults";
             this.response_waiting = "block";
@@ -199,7 +205,7 @@ export default {
 </script>
 
 <style>
-#searchEngine {
+#home {
     flex: 1;
     min-height: 0px;
     display: flex;
@@ -300,7 +306,6 @@ select {
 
 #job_results_table {
     flex: 1;
-    /* max-height: 300px; */
     overflow: scroll;
     display: block;
     border-collapse: collapse;

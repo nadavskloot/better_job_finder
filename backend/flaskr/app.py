@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import pprint
@@ -11,12 +11,12 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jobs.db'
 CORS(app)
 
+# SQLAlchemy attaches database to app
+# Marshmallow allows for conversion of database data to different data types
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 
 # Database of jobs
-
-
 class Jobs(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     score = db.Column(db.Float)
@@ -33,12 +33,13 @@ class Jobs(db.Model):
     def __repr__(self):
         return '(Job Title: %r)' % self.job_title
 
-
+# Resets and re-creates the database each time the server restarts
 db.drop_all()
 db.create_all()
 db.session.commit()
 
-
+# Schema for converting the data in Jobs database to dictionary format
+# Necessary for sending Jobs data as json to the frontend
 class JobsSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Jobs
@@ -46,9 +47,8 @@ class JobsSchema(ma.SQLAlchemyAutoSchema):
 # Receives search data from the frontend and then returns a response object
 @app.route("/getSearchResults", methods=['POST', 'GET'])
 def getSearchResults():
-    response_object = {'status': 'success'}
-    print(request.get_json())
 
+    # If POST request, execute job search query using web-scrapers
     if request.method == 'POST':
         db.session.query(Jobs).delete()
         db.session.commit()
@@ -62,11 +62,11 @@ def getSearchResults():
         pp = pprint.PrettyPrinter()
         pp.pprint(linkedinJobs)
         return jsonify(linkedinJobs)
+    # If GET request, retrieve Jobs database data and send to frontend
     else:
         jobs = Jobs.query.order_by(Jobs.score * -1).all()
         jobs_schema = JobsSchema(many=True)
         output = jobs_schema.dump(jobs)
-        print(output)
         return jsonify(output)
 
 

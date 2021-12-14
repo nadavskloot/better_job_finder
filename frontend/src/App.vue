@@ -3,17 +3,17 @@
         <header>
             <h1 id="page_title">Better Job Finder</h1>
         </header>
-        <SearchEngine />
+        <Home />
     </div>
 </template>
 
 <script>
-import SearchEngine from "./components/SearchEngine.vue";
+import Home from "./components/Home.vue";
 
 export default {
     name: "App",
     components: {
-        SearchEngine,
+        Home,
     },
 };
 </script>
