@@ -1,79 +1,180 @@
 <template>
-    <div id="search_div">
-        <form id="search_container">
-            <div id="left">
-                <label>Desired Job Title</label>
-                <input v-model="search_data.job_title" type="text" placeholder="'Software Engineer, Financial Manager, etc.'">
+    <div id="searchEngine">
+        <div id="search_div">
+            <form id="search_container">
+                <div id="left">
+                    <label>Desired Job Title</label>
+                    <input
+                        v-model="search_data.job_title"
+                        type="text"
+                        placeholder="'Software Engineer, Financial Manager, etc.'"
+                    />
 
-                <label>Your Years of Experience</label>
-                <input class="range_input" v-model="search_data.experience" type="range" min="0" max="60">
-                <output>{{search_data.experience}}</output>
+                    <label
+                        v-html="
+                            'Your Years of Experience < <b style=\'color:#61ba46\'>' +
+                            search_data.experience +
+                            ' years</b>'
+                        "
+                    ></label>
+                    <input
+                        class="range_input"
+                        v-model="search_data.experience"
+                        type="range"
+                        min="0"
+                        max="60"
+                    />
 
-                <label>Your Education Level</label>
-                <select v-model="search_data.education">
-                    <option>High School</option>
-                    <option>Bachelors</option>
-                    <option>Masters</option>
-                    <option>P.H.D.</option>
-                </select>
+                    <label>Your Education Level</label>
+                    <select v-model="search_data.education">
+                        <option>High School</option>
+                        <option>Bachelors</option>
+                        <option>Masters</option>
+                        <option>P.H.D.</option>
+                    </select>
 
-                <label>Your Skills</label>
-                <input v-model="search_data.required_skills" type="text" placeholder="Ex.: 'Java, Microsoft Office, etc.'">
+                    <label>Your Skills</label>
+                    <input
+                        v-model="search_data.required_skills"
+                        type="text"
+                        placeholder="Ex.: 'Java, Microsoft Office, etc.'"
+                    />
+                </div>
+                <div id="right">
+                    <label>Location</label>
+                    <input
+                        v-model="search_data.location"
+                        type="text"
+                        placeholder="Location"
+                    />
+
+                    <label
+                        >Expected Yearly Income >
+                        <b style="color: #61ba46"
+                            >${{ search_data.income }}</b
+                        ></label
+                    >
+                    <input
+                        class="range_input"
+                        v-model="search_data.income"
+                        type="range"
+                        min="0"
+                        max="500000"
+                    />
+
+                    <label>Employment Type</label>
+                    <select v-model="search_data.job_type">
+                        <option>Full-time</option>
+                        <option>Part-time</option>
+                        <option>Internship</option>
+                        <option>Contract</option>
+                    </select>
+
+                    <label>Find your dream job!</label>
+                    <input
+                        id="search_button"
+                        @click="getSearchResults"
+                        type="button"
+                        value="Search"
+                    />
+                </div>
+            </form>
+        </div>
+        <div id="job_results_section">
+            <h2 id="results_title">Results</h2>
+            <table id="job_results_table" v-if="jobs_data.length > 0">
+                <thead>
+                    <tr>
+                        <th class="job_title_header">Job Title</th>
+                        <th class="employer_header">Company</th>
+                        <th class="location_header">Location</th>
+                        <th class="years_experience_header">
+                            Years Experience
+                        </th>
+                        <th class="education_level_header">Education Level</th>
+                        <th class="employment_type_header">Employment Type</th>
+                        <th class="required_skills_header">Required Skills</th>
+                        <th class="salary_header">Salary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="job in jobs_data" :key="job.id">
+                        <td class="job_title_column">
+                            <a :href="job.job_post_link" target="_blank">{{
+                                job.job_title
+                            }}</a>
+                        </td>
+                        <td class="employer_column">
+                            {{ job.employer }}
+                        </td>
+                        <td class="location_column">
+                            {{ job.location }}
+                        </td>
+                        <td class="years_experience_column">
+                            {{ job.years_experience }}
+                        </td>
+                        <td class="education_level_column">
+                            {{ job.education_level }}
+                        </td>
+                        <td class="employment_type_column">
+                            {{ job.employment_type }}
+                        </td>
+                        <td class="required_skills_column">
+                            {{ job.required_skills }}
+                        </td>
+                        <td class="salary_column">
+                            {{ job.salary }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div :style="{ display: response_waiting }" id="response_waiting_alert">
+            <div>
+                Sorry! We understand that this isn't ideal but, this site is
+                still early in it's development so your query may take upto
+                <b>2 minutes</b> to get a response. Please wait patiently until
+                this alert disappears.
+                <img
+                    style="
+                        height: 50px;
+                        width: 50px;
+                        margin: 0 auto;
+                        display: block;
+                    "
+                    src="https://i.stack.imgur.com/kOnzy.gif"
+                />
             </div>
-            <div id="right">
-                <label>Location</label>
-                <input v-model="search_data.location" type="text" placeholder="Location">
-
-                <label>Expected Yearly Income</label>
-                <input class="range_input" v-model="search_data.income" type="range" min="0" max="500000">
-                <output>${{search_data.income}}</output>
-
-                <label>Employment Type</label>
-                <select v-model="search_data.job_type">
-                    <option>Full-time</option>
-                    <option>Part-time</option>
-                    <option>Internship</option>
-                    <option>Contract</option>
-                </select>
-
-                <label>Find your dream job!</label>
-                <input id="search_button" @click="getSearchResults" type="button" value="Search">
-            </div>
-        </form>
-    </div>
-    <div id="job_results_section">
-        <h2 id="results_title">Results</h2>
-        <ul>
-            <li v-for="job in jobs_data" :key="job.id">
-                {{job.job_title}} {{job.employer}} {{job.job_post_link}}
-            </li>
-        </ul>
+        </div>
     </div>
 </template>
 
 <script>
-    import axios from 'axios'
+import axios from "axios";
 
-    export default {
-        data() {
-            return {
-                search_data: {
-                    job_title: "",
-                    location: "",
-                    income: 0,
-                    key_words: "",
-                    required_skills: "",
-                    experience: 0,
-                    education: "",
-                    job_type: ""
-                },
-                jobs_data: []
-            }
-        },
-        methods: {
-            getSearchResults() {
-                const path = 'http://127.0.0.1:5000/getSearchResults'
-                axios.post(path, {
+export default {
+    data() {
+        return {
+            search_data: {
+                job_title: "",
+                location: "",
+                income: 0,
+                key_words: "",
+                required_skills: "",
+                experience: 0,
+                education: "",
+                job_type: "",
+            },
+            jobs_data: [],
+            response_waiting: "none",
+        };
+    },
+    methods: {
+        getSearchResults() {
+            const path = "http://127.0.0.1:5000/getSearchResults";
+            this.response_waiting = "block";
+            axios
+                .post(path, {
                     job_title: this.search_data.job_title,
                     location: this.search_data.location,
                     income: this.search_data.income,
@@ -81,21 +182,32 @@
                     required_skills: this.search_data.required_skills,
                     experience: this.search_data.experience,
                     education: this.search_data.education,
-                    job_type: this.search_data.job_type
+                    job_type: this.search_data.job_type,
                 })
-                .then(response => {console.log(response), axios.get(path).then(response => (this.jobs_data = response.data)).catch(err => {console.log(err)})})
-                .catch(err => {console.log(err)})
-
-                // axios.get(path).then(response => (this.jobs_data = response.data)).catch(err => {console.log(err)})
-                // console.log(this.jobs_data)
-            }
-        }
-    }
+                .then((response) => {
+                    this.jobs_data = response.data;
+                    this.response_waiting = "none";
+                    console.log(response);
+                })
+                .catch((err) => {
+                    console.log(err);
+                    this.response_waiting = "none";
+                });
+        },
+    },
+};
 </script>
 
 <style>
+#searchEngine {
+    flex: 1;
+    min-height: 0px;
+    display: flex;
+    flex-direction: column;
+}
+
 #search_div {
-    height: 400px;
+    height: 40%;
     margin-bottom: 1%;
 }
 
@@ -131,7 +243,8 @@ label {
     font-style: italic;
 }
 
-input, select {
+input,
+select {
     float: left;
     width: calc(100% - 10px);
     height: 11%;
@@ -174,11 +287,73 @@ select {
     border-right: 0px;
     border-style: solid;
     border-color: black;
-    height: 100%;
+    min-height: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 #results_title {
     font-weight: 500;
     font-size: 30px;
+}
+
+#job_results_table {
+    flex: 1;
+    /* max-height: 300px; */
+    overflow: scroll;
+    display: block;
+    border-collapse: collapse;
+    padding: 0px 20px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0px auto;
+}
+#job_results_table > thead {
+    position: sticky;
+    top: 0;
+}
+#job_results_table th,
+#job_results_table td {
+    white-space: nowrap;
+    text-align: left;
+
+    padding: 10px 20px 10px 0;
+}
+#job_results_table th {
+    background-color: white;
+}
+#job_results_table td {
+    background-color: white;
+    border-top: 1px solid #cfcfcf;
+    font-size: 0.8em;
+}
+
+.job_title_column > a {
+    text-decoration: none;
+    font-weight: bold;
+    color: #227aec;
+}
+
+#response_waiting_alert {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+#response_waiting_alert > div {
+    position: fixed;
+    width: 400px;
+    padding: 30px;
+    background-color: rgb(238, 251, 253);
+    box-shadow: 0px 0px 50px rgba(0, 0, 0.2, 0.5);
+    border-radius: 10px;
+    margin: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 </style>

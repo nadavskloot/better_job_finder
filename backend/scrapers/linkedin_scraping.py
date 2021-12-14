@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
+from .setupChromeDriver import downloadDriver
 
 from bs4 import BeautifulSoup
 import platform
@@ -18,7 +19,7 @@ import pprint
 import time
 import os
 import zipfile
-import xmltodict
+# import xmltodict
 from textblob import TextBlob
 from word2number import w2n
 
@@ -30,7 +31,8 @@ def setupDriver():
     driverPath = downloadDriver()
     print('*************************** driverpath:', driverPath)
     s = Service(driverPath)
-    driver = webdriver.Chrome(service=s, options=chrome_options) # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
+    driver = webdriver.Chrome(service=s, options=chrome_options)
     driver.get("https://www.linkedin.com/jobs")
     return driver
 
@@ -48,63 +50,6 @@ def search(driver, kewWord, location):
     jobInput.send_keys(Keys.RETURN)  # search
     waitForRefresh(driver, base)
     return driver
-
-
-def downloadDriver():
-    dirname = os.path.dirname(__file__)
-    driver_folder = os.path.join(dirname, 'chromedrivers')
-    os.makedirs(driver_folder, exist_ok=True)
-
-    osname = platform.system()
-    if osname == 'Darwin':
-        chromeVersion = os.popen(
-            '/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version').read().strip('Google Chrome ').strip()
-    elif osname == 'Windows':
-        chromeVersion = os.popen(
-            'C:\Program Files\Google\Chrome\Application\chrome.exe --version').read().strip('Google Chrome ').strip()
-    elif osname == 'Linux':
-        chromeVersion = os.popen(
-            '/usr/bin/google-chrome --version').read().strip('Google Chrome ').strip()
-
-    if os.path.exists(driver_folder+'/chromedriver'):
-        if os.popen(f'{driver_folder}/chromedriver -v').read().split(' ')[1].split('.')[0:2] == chromeVersion.split('.')[0:2]:
-            print('*************************************', 'keeping driver')
-            return driver_folder+'/chromedriver'
-        else:
-            print('*************************************', 'replacing driver')
-            os.remove(driver_folder+'/chromedriver')
-    else:
-        print('*************************************', 'creating driver')
-
-    r = requests.get(
-        'https://chromedriver.storage.googleapis.com/?delimiter=/&prefix=')
-    json = xmltodict.parse(r.content)
-    downloadVersion = ''
-    for i in json['ListBucketResult']['CommonPrefixes']:
-        if i['Prefix'].split('.')[0:2] == chromeVersion.split('.')[0:2]:
-            downloadVersion = i['Prefix'][:-1]
-            break
-
-    if osname == 'Darwin':
-        if platform.processor() == 'arm' and int(chromeVersion.split('.')[0]) > 88:
-            downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_mac64_m1.zip'
-        else:
-            downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_mac64.zip'
-    elif osname == 'Windows':
-        downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_win32.zip'
-    elif osname == 'Linux':
-        downloadLink = f'https://chromedriver.storage.googleapis.com/{downloadVersion}/chromedriver_linux64.zip'
-    r_down = requests.get(downloadLink, allow_redirects=True)
-    # https://stackoverflow.com/questions/49787327/selenium-on-mac-message-chromedriver-executable-may-have-wrong-permissions
-    # https://stackoverflow.com/questions/36745577/how-do-you-create-in-python-a-file-with-permissions-other-users-can-write
-    zip_location = f'{driver_folder}/{osname}-{downloadVersion}-driver.zip'
-    open(os.open(zip_location,
-                 os.O_CREAT | os.O_WRONLY, 0o755), 'wb').write(r_down.content)
-    with zipfile.ZipFile(zip_location, 'r') as zip_ref:
-        zip_ref.extractall(driver_folder)
-    os.chmod(driver_folder+'/chromedriver', 0o755)
-    os.remove(zip_location)
-    return driver_folder+'/chromedriver'
 
 
 def scrape(driver, userSearch):
@@ -147,9 +92,9 @@ def scrape(driver, userSearch):
             "employer": jobEmployer.text.strip(),
             "location": jobLocation.text.strip(),
             'salary': None,
-            'required_skills': [], 
-            'years_experience': None, 
-            'education_level': [], 
+            'required_skills': [],
+            'years_experience': None,
+            'education_level': [],
             'employment_type': None,
             'score': 0,
             "job_post_link": base_url
@@ -190,8 +135,8 @@ def findEducation(jobDescriptionDiv, jobDict):
     blob = TextBlob(str(jobDescriptionDiv.text))
     # print(blob)
     educationRegex = {"Bachelors": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
-                       "Masters": [r"\b[Mm]aster", r"\bMS ", r"\bM.S. "],
-                       "P.H.D": [ r"PhD", r"P.H.D.", r"\b[Dd]octorate "]}
+                      "Masters": [r"\b[Mm]aster", r"\bMS ", r"\bM.S. "],
+                      "P.H.D": [r"PhD", r"P.H.D.", r"\b[Dd]octorate "]}
     for sentence in blob.sentences:
         for educationLevel in educationRegex.keys():
             for regex in educationRegex[educationLevel]:
@@ -242,7 +187,8 @@ def sentenceToExperience(sentence, jobDict):
         # print(matches)
         # print(int(min(matches)))
         if jobDict["years_experience"]:
-            jobDict["years_experience"] = max(jobDict["years_experience"], int(min(matches)))
+            jobDict["years_experience"] = max(
+                jobDict["years_experience"], int(min(matches)))
         else:
             jobDict["years_experience"] = int(min(matches))
 
@@ -271,7 +217,8 @@ def score(jobDict, userSearch):
             jobDict["score"] += 1
             print("experience!")
     if len(jobDict["required_skills"]) > 0:
-        jobDict["score"] += (len(jobDict["required_skills"]) / len(userSearch["required_skills"].split(",")))
+        jobDict["score"] += (len(jobDict["required_skills"]) /
+                             len(userSearch["required_skills"].split(",")))
         print("skills!")
     if jobDict["salary"] and userSearch["income"]:
         if jobDict["salary"] >= int(userSearch["income"]):
