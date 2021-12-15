@@ -6,6 +6,7 @@ import pprint
 import sys
 sys.path.append('../')
 from scrapers import linkedin_scraping
+from scrapers import indeed_scraping
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jobs.db'
@@ -53,15 +54,24 @@ def getSearchResults():
         db.session.query(Jobs).delete()
         db.session.commit()
         userSearch = dict(request.get_json())
+        allJobs = []
         linkedinJobs = linkedin_scraping.main(userSearch)
-        for job in linkedinJobs:
+        allJobs.extend(linkedinJobs)
+        # for job in linkedinJobs:
+        #     job["required_skills"] = str(job["required_skills"])
+        #     job["education_level"] = str(job["education_level"])
+        #     db.session.add(Jobs(**job))
+        #     db.session.commit()
+        indeedJobs = indeed_scraping.main(userSearch)
+        allJobs.extend(indeedJobs)
+        for job in allJobs:
             job["required_skills"] = str(job["required_skills"])
             job["education_level"] = str(job["education_level"])
             db.session.add(Jobs(**job))
             db.session.commit()
-        pp = pprint.PrettyPrinter()
-        pp.pprint(linkedinJobs)
-        return jsonify(linkedinJobs)
+        # pp = pprint.PrettyPrinter()
+        # pp.pprint(linkedinJobs)
+        return jsonify(allJobs)
     # If GET request, retrieve Jobs database data and send to frontend
     else:
         jobs = Jobs.query.order_by(Jobs.score * -1).all()

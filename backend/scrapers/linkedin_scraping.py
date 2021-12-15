@@ -25,6 +25,7 @@ from word2number import w2n
 
 
 def setupDriver():
+    """Installs and prepares the Selenium driver"""
     chrome_options = Options()
     # chrome_options.add_experimental_option("detach", True)  # So window doesn't close
     chrome_options.add_argument("--headless") # So window never opens
@@ -38,6 +39,7 @@ def setupDriver():
 
 
 def search(driver, kewWord, location):
+    """Performs a jobs search on LinkedIn using the user's job title and location"""
     jobInput = driver.find_elements(By.NAME, "keywords")[0]
     jobLocation = driver.find_elements(By.NAME, "location")[0]
     jobInput.clear()
@@ -53,6 +55,7 @@ def search(driver, kewWord, location):
 
 
 def scrape(driver, userSearch):
+    """Scrapes all resulting job postings from the job search"""
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobsUl = soup.find(
@@ -131,7 +134,8 @@ def scrape(driver, userSearch):
     return linkedinJobs
 
 
-def findEducation(jobDescriptionDiv, jobDict):
+def findEducation(jobDescriptionDiv, jobDict): 
+    """"Finds the level of education from the job description"""
     blob = TextBlob(str(jobDescriptionDiv.text))
     # print(blob)
     educationRegex = {"Bachelors": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
@@ -150,8 +154,9 @@ def findEducation(jobDescriptionDiv, jobDict):
 
 
 def findExperience(jobDescriptionDiv, jobDict):
-    yearsExperienceTag = jobDescriptionDiv.find(
-        text=[re.compile(r"\b\d+\b(.)*((year)|(years))(.)*experience")])
+    """"Finds the level of experience from the job description"""
+    # yearsExperienceTag = jobDescriptionDiv.find(
+    #     text=[re.compile(r"\b\d+\b(.)*((year)|(years))(.)*experience")])
     children = jobDescriptionDiv.findChildren()
     # for tag in jobDescriptionDiv:
     #     print(tag)
@@ -175,6 +180,8 @@ def findExperience(jobDescriptionDiv, jobDict):
 
 
 def sentenceToExperience(sentence, jobDict):
+    """Converts the sentence containing the level of experience to a singular number 
+    that represents the minimum accepted years of experience"""
     matches = re.findall(
         "(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
     if matches:
@@ -195,6 +202,7 @@ def sentenceToExperience(sentence, jobDict):
 
 # required Skills need to be comma seperated!!
 def search_skills(jobDescriptionDiv, jobDict, userSearch):
+    """Searches through the job description for the user's skills"""
     skills = userSearch["required_skills"].split(",")
     print(skills)
     string = str(jobDescriptionDiv.text)
@@ -206,6 +214,7 @@ def search_skills(jobDescriptionDiv, jobDict, userSearch):
 
 
 def score(jobDict, userSearch):
+    """Scores a job result based on how well it matches the user's specifications"""
     if userSearch["education"] in jobDict["education_level"]:
         jobDict["score"] += 1
         print("education!")
@@ -227,6 +236,7 @@ def score(jobDict, userSearch):
 
 
 def waitForRefresh(driver, base):
+    """Waits until selenium page changes"""
     try:
         element = WebDriverWait(driver, 20).until(
             EC.staleness_of(base)
