@@ -14,6 +14,8 @@ import re
 import sys
 import pprint
 import requests
+from textblob import TextBlob
+from word2number import w2n
 
 
 def setupDriver():
@@ -50,7 +52,7 @@ def search(driver, kewWord, location):
     return driver
 
 
-def scrape(driver):
+def scrape(driver, userSearch):
     soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     jobsUl = soup.find("ul", attrs={'class': re.compile("job-search-key")})
@@ -58,6 +60,7 @@ def scrape(driver):
     jobLinks = jobsUl.find_all("a", href=True, limit=20)
     jobLinks = jobLinks[::4]
 
+    glassdoorJobs = []
     for job in jobLinks:
         base_url = "https://www.glassdoor.com" + job['href']
         base = driver.find_element(By.TAG_NAME, "html")
@@ -81,6 +84,19 @@ def scrape(driver):
         print(jobEmployer.string)
         print(jobLocation.string)
 
+        jobDict = {
+            "job_title": jobTitle.string.strip(),
+            "employer": jobEmployer.text.strip(),
+            "location": jobLocation.text.strip(),
+            'salary': None,
+            'required_skills': [],
+            'years_experience': None,
+            'education_level': [],
+            'employment_type': None,
+            'score': 0,
+            "job_post_link": base_url
+        }
+
         try:
             element = WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located(
@@ -101,8 +117,120 @@ def scrape(driver):
             print("no salary")
 
         # print(jobDescriptionDiv)
-        print(jobDescriptionDiv.text)
+        # print(jobDescriptionDiv.text)
+        findEducation(jobDescriptionDiv, jobDict)
+        findExperience(jobDescriptionDiv, jobDict)
+        if userSearch["required_skills"].strip() != "":
+            search_skills(jobDescriptionDiv, jobDict, userSearch)
+
+        score(jobDict, userSearch)
+
+        pp = pprint.PrettyPrinter()
+        pp.pprint(jobDict)
         print()
+        glassdoorJobs.append(jobDict)
+        print()
+    return glassdoorJobs
+
+def findEducation(jobDescriptionDiv, jobDict): 
+    """"Finds the level of education from the job description"""
+    blob = TextBlob(str(jobDescriptionDiv.text))
+    # print(blob)
+    educationRegex = {"Bachelors": [r"[Bb]achelor", r"\bBS ", r"\bB.S. ", r"\bBA ", r"\bB.A. " r"College Diploma "],
+                      "Masters": [r"\b[Mm]aster", r"\bMS ", r"\bM.S. "],
+                      "P.H.D": [r"PhD", r"P.H.D.", r"\b[Dd]octorate "]}
+    for sentence in blob.sentences:
+        for educationLevel in educationRegex.keys():
+            for regex in educationRegex[educationLevel]:
+                match = re.search(regex, str(sentence))
+                if match:
+                    # print(str(sentence))
+                    # print(match.group())
+                    # print(educationLevel)
+                    if educationLevel not in jobDict["education_level"]:
+                        jobDict["education_level"].append(educationLevel)
+
+
+def findExperience(jobDescriptionDiv, jobDict):
+    """"Finds the level of experience from the job description"""
+    # yearsExperienceTag = jobDescriptionDiv.find(
+    #     text=[re.compile(r"\b\d+\b(.)*((year)|(years))(.)*experience")])
+    children = jobDescriptionDiv.findChildren()
+    # for tag in jobDescriptionDiv:
+    #     print(tag)
+    #     print()
+    experienceRegex = [r"\b\d+\b(.)*((year)|(years))(.)*experience",
+                       r"(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )(.)*[(year)|(years)](.)*experience"]
+    for child in children:
+        for child2 in child:
+            # print(child2.text)
+            blob = TextBlob(str(child2.text))
+            for sentence in blob.sentences:
+                for regex in experienceRegex:
+                    match = re.search(regex, str(sentence))
+                    if match:
+                        # print(match)
+                        sentenceToExperience(match.group(), jobDict)
+                        # print()
+                    # match2 = re.search(r"years", str(sentence))
+                    # if match2:
+                    #     print("match2: ", sentence)
+
+
+def sentenceToExperience(sentence, jobDict):
+    """Converts the sentence containing the level of experience to a singular number 
+    that represents the minimum accepted years of experience"""
+    matches = re.findall(
+        "(one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |thirteen |fourteen |fifteen )", sentence)
+    if matches:
+        for match in matches:
+            num = w2n.word_to_num(match)
+
+            sentence = sentence.replace(match, str(num))
+    matches = re.findall(r"\d+", sentence)
+    if matches:
+        # print(matches)
+        # print(int(min(matches)))
+        if jobDict["years_experience"]:
+            jobDict["years_experience"] = max(
+                jobDict["years_experience"], int(min(matches)))
+        else:
+            jobDict["years_experience"] = int(min(matches))
+
+
+# required Skills need to be comma seperated!!
+def search_skills(jobDescriptionDiv, jobDict, userSearch):
+    """Searches through the job description for the user's skills"""
+    skills = userSearch["required_skills"].split(",")
+    print(skills)
+    string = str(jobDescriptionDiv.text)
+    for skill in skills:
+        match = re.search(re.escape(skill.strip().lower()), string.lower())
+        if match:
+            print(match.group())
+            jobDict["required_skills"].append(str(match.group()).strip())
+
+
+def score(jobDict, userSearch):
+    """Scores a job result based on how well it matches the user's specifications"""
+    if userSearch["education"] in jobDict["education_level"]:
+        jobDict["score"] += 1
+        print("education!")
+    if jobDict["employment_type"] == userSearch["job_type"]:
+        jobDict["score"] += 1
+        print("Job Type!")
+    if userSearch["experience"] and jobDict["years_experience"]:
+        if jobDict["years_experience"] <= int(userSearch["experience"]):
+            jobDict["score"] += 1
+            print("experience!")
+    if len(jobDict["required_skills"]) > 0:
+        jobDict["score"] += (len(jobDict["required_skills"]) /
+                             len(userSearch["required_skills"].split(",")))
+        print("skills!")
+    if jobDict["salary"] and userSearch["income"]:
+        if jobDict["salary"] >= int(userSearch["income"]):
+            jobDict["score"] += 1
+            print("salary!")
 
 
 def waitForRefresh(driver, base):
@@ -115,6 +243,15 @@ def waitForRefresh(driver, base):
         print("baddd")
         raise TimeoutError
 
+
+def main(userSearch):
+    keyWord = userSearch["job_title"]
+    location = userSearch["location"]
+    driver = setupDriver()
+    driver = search(driver, keyWord, location)
+    glassdoorJobs = scrape(driver, userSearch)
+    driver.quit()
+    return glassdoorJobs
 
 if __name__ == "__main__":
     keyWord = sys.argv[1]

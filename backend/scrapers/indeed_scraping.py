@@ -6,7 +6,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
-# from .setupChromeDriver import downloadDriver
+from .setupChromeDriver import downloadDriver
 
 from bs4 import BeautifulSoup
 import re
@@ -23,8 +23,8 @@ def setupDriver():
         "detach", True)  # So window doesn't close
     chrome_options.add_argument("--disable-single-click-autofill")
     chrome_options.add_argument("--ignore-autocomplete-on-autofill")
-    # driverPath = downloadDriver()
-    driverPath = '/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/chromedriver'
+    driverPath = downloadDriver()
+    # driverPath = '/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/backend/scrapers/chromedrivers/chromedriver'
     s = Service(driverPath)
     # add your path to chromedriver, mine is "/Users/nadavskloot/Documents/GitHub/comp446/better_job_finder/chromedriver"
     driver = webdriver.Chrome(service=s, options=chrome_options)
@@ -77,8 +77,10 @@ def scrape(driver, userSearch):
         jobType = None
         if detailsSection:
             salary = detailsSection.find("span", string=re.compile("$"))
-            jobType = detailsSection.find(
-                "div", string="Job Type").next_sibling
+            jobTypeSection = detailsSection.find(
+                "div", string="Job Type")
+            if jobTypeSection:
+                jobType=jobTypeSection.next_sibling
         qualificationsSection = soup.find("div", id="qualificationsSection")
 
         descriptionSection = soup.find("div", id="jobDescriptionText")

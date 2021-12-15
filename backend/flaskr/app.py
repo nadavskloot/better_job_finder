@@ -2,11 +2,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
+from sqlalchemy import desc
 import pprint
 import sys
 sys.path.append('../')
 from scrapers import linkedin_scraping
 from scrapers import indeed_scraping
+from scrapers import glassdoor_scraping
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///jobs.db'
@@ -55,15 +57,13 @@ def getSearchResults():
         db.session.commit()
         userSearch = dict(request.get_json())
         allJobs = []
-        linkedinJobs = linkedin_scraping.main(userSearch)
-        allJobs.extend(linkedinJobs)
-        # for job in linkedinJobs:
-        #     job["required_skills"] = str(job["required_skills"])
-        #     job["education_level"] = str(job["education_level"])
-        #     db.session.add(Jobs(**job))
-        #     db.session.commit()
+        glassdoorJobs = glassdoor_scraping.main(userSearch)
+        allJobs.extend(glassdoorJobs)
         indeedJobs = indeed_scraping.main(userSearch)
         allJobs.extend(indeedJobs)
+        linkedinJobs = linkedin_scraping.main(userSearch)
+        allJobs.extend(linkedinJobs)
+        
         for job in allJobs:
             job["required_skills"] = str(job["required_skills"])
             job["education_level"] = str(job["education_level"])
@@ -74,7 +74,8 @@ def getSearchResults():
         return jsonify(allJobs)
     # If GET request, retrieve Jobs database data and send to frontend
     else:
-        jobs = Jobs.query.order_by(Jobs.score * -1).all()
+        # jobs = Jobs.query.order_by(Jobs.score * -1.0).all()
+        jobs = Jobs.order_by(desc(Jobs.score)).all()
         jobs_schema = JobsSchema(many=True)
         output = jobs_schema.dump(jobs)
         return jsonify(output)

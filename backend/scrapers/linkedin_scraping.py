@@ -27,8 +27,8 @@ from word2number import w2n
 def setupDriver():
     """Installs and prepares the Selenium driver"""
     chrome_options = Options()
-    # chrome_options.add_experimental_option("detach", True)  # So window doesn't close
-    chrome_options.add_argument("--headless") # So window never opens
+    chrome_options.add_experimental_option("detach", True)  # So window doesn't close
+    # chrome_options.add_argument("--headless") # So window never opens
     driverPath = downloadDriver()
     print('*************************** driverpath:', driverPath)
     s = Service(driverPath)
@@ -63,6 +63,7 @@ def scrape(driver, userSearch):
     if not jobsUl:
         print("NO UL")
         print(soup)
+        return []
     jobLinks = jobsUl.find_all("a", href=True, attrs={
                                "class": re.compile("base-card__full-link")})
     print(len(jobLinks))
@@ -83,6 +84,7 @@ def scrape(driver, userSearch):
         if not jobHeader:
             driver.get(base_url)
             print(soup)
+            return []
         jobTitle = jobHeader.find(
             "h1", attrs={"class": re.compile("topcard__title")})
         jobEmployer = jobHeader.find(

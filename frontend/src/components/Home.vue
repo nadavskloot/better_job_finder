@@ -125,6 +125,9 @@
                         <td class="salary_column">
                             {{ job.salary }}
                         </td>
+                        <td class="score_column">
+                            {{ job.score }}
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -133,8 +136,8 @@
         <div :style="{ display: response_waiting }" id="response_waiting_alert">
             <div>
                 Sorry! We understand that this isn't ideal but, this site is
-                still early in it's development so your query may take upto
-                <b>2 minutes</b> to get a response. Please wait patiently until
+                still early in it's development so your query may take up to
+                <b>3 minutes</b> to get a response. Please wait patiently until
                 this alert disappears.
                 <img
                     style="
