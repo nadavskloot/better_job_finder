@@ -71,7 +71,11 @@ def getSearchResults():
             db.session.commit()
         # pp = pprint.PrettyPrinter()
         # pp.pprint(linkedinJobs)
-        return jsonify(allJobs)
+        # return jsonify(allJobs)
+        jobs = Jobs.query.order_by(desc(Jobs.score)).all()
+        jobs_schema = JobsSchema(many=True)
+        output = jobs_schema.dump(jobs)
+        return jsonify(output)
     # If GET request, retrieve Jobs database data and send to frontend
     else:
         # jobs = Jobs.query.order_by(Jobs.score * -1.0).all()
